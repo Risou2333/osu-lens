@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>osu! 玩家信息查看器</title>
+    <!-- 外部库 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- 链接到您的自定义样式表 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start">
+    <div id="theme-background"></div>
+    <canvas id="background-animation-canvas"></canvas>
+
+    <div class="w-full max-w-5xl mx-auto px-3 sm:px-4 text-center py-2">
+        <h1 class="text-2xl sm:text-3xl font-bold" style="color: var(--primary-color);">osu! 玩家信息查看器</h1>
+        <p class="text-xs sm:text-sm text-center opacity-75 mt-1">by Risou</p>
+    </div>
+    <header id="pageHeader" class="sticky top-0 z-40 w-full py-2 transition-shadow duration-300" style="background-color: var(--bg-color);">
+        <div class="w-full max-w-5xl mx-auto px-3 sm:px-4">
+            <nav id="navBar" class="w-full mx-auto flex items-center justify-between border-t border-b py-2" style="border-color: var(--input-border-color);">
+                <button id="toggleSearchBtn" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 transition-opacity px-2 py-1 rounded-md flex items-center gap-2" title="切换搜索框">🔍</button>
+                <div id="navLinksContainer" class="hidden sm:flex justify-center space-x-6 sm:space-x-10">
+                    <a data-page="playerInfoSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">👨‍🦽‍➡️ 玩家信息</a>
+                    <a data-page="topPlaysAnalysisSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">📊 Plays 分析</a>
+                    <a data-page="topPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🏆 最佳表现</a>
+                    <a data-page="recentPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🕒 最近游玩</a>
+                </div>
+                <button id="sourceToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors" title="切换下载源">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl mx-auto p-3 sm:p-4">
+        <div id="searchCard" class="mb-6 p-4 sm:p-6 card">
+            <div id="keySetupInstructions" class="hidden mb-6 p-4 border rounded-lg" style="border-color: var(--input-border-color);">
+                <h3 class="text-lg font-bold mb-2" style="color: var(--primary-color);">首次设置 API 密钥</h3>
+                <p class="mb-3 opacity-80">为了使用本工具，您需要提供 osu! API v2 凭证。请按照以下步骤获取：</p>
+                <ol class="list-decimal list-inside space-y-2 text-sm opacity-90">
+                    <li>打开您的个人设置页面: <a href="https://osu.ppy.sh/home/account/edit" target="_blank" class="underline" style="color:var(--link-color);">osu! 账户设置</a>。</li>
+                    <li>滚动到页面底部的 “<b>开放授权</b>” 部分，点击 “<b>新的 OAuth 应用</b>”。</li>
+                    <li>输入一个您喜欢的 “应用名称” (例如: OsuViewer)，然后点击 “<b>注册应用程序</b>”。</li>
+                    <li>复制页面上显示的 “<b>客户端 ID</b>” 和 “<b>客户端密钥</b>” 并粘贴到下方对应的输入框中。</li>
+                </ol>
+            </div>
+    
+            <div id="credentialsContainer">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                   <div>
+                       <label for="clientId" class="block text-sm font-medium mb-1">客户端ID</label>
+                       <input type="password" id="clientId" class="input-field w-full" placeholder="请粘贴您的客户端ID">
+                   </div>
+                   <div>
+                       <label for="clientSecret" class="block text-sm font-medium mb-1">客户端密钥</label>
+                       <input type="password" id="clientSecret" class="input-field w-full" placeholder="请粘贴您的客户端密钥">
+                   </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="saveKeysBtn" class="btn-primary">保存并验证密钥</button>
+                </div>
+            </div>
+    
+            <div id="keyManagementContainer" class="hidden flex justify-between items-center mb-4">
+                <p class="text-sm opacity-80">✓ 已读取保存的 API 密钥。</p>
+                <button id="changeKeyBtn" class="text-sm font-medium underline hover:opacity-80 transition-opacity" style="color:var(--link-color);">更换密钥</button>
+            </div>
+    
+            <div id="userSearchArea" class="hidden">
+                <label for="username" class="block text-sm font-medium mb-2">输入 osu! 玩家名称或 ID:</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="username" name="username" class="input-field flex-grow text-base" placeholder="例如: mrekk, 7562902, ...">
+                    <button id="searchButton" class="btn-primary">查询</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center my-8 hidden">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4" style="border-color: var(--primary-color); border-top-color: transparent;"></div>
+            <p class="mt-2 text-lg">正在加载数据...</p>
+        </div>
+
+        <div id="errorMessage" class="text-center my-6 p-4 bg-red-600 text-white rounded-lg hidden"></div>
+
+        <div id="playerDataContainer" class="hidden">
+            <section id="playerInfoSection" class="page-content space-y-6">
+                 <div id="player-banner" class="flex items-end p-4 md:p-6">
+                    <div id="player-banner-content" class="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-white w-full">
+                         <a id="playerProfileLink" href="#" target="_blank" rel="noopener noreferrer" class="block flex-shrink:0">
+                            <img id="playerAvatar" src="https://placehold.co/128x128/2a2a4e/e0e0e0?text=头像" alt="玩家头像" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 shadow-lg transition-opacity duration-200" style="border-color: var(--primary-color);">
+                        </a>
+                        <div class="flex-grow text-center md:text-left">
+                            <div class="flex items-center justify-center md:justify-start gap-3 mb-1">
+                                <h2 id="playerName" class="text-3xl sm:text-4xl font-bold break-all text-shadow">玩家名称</h2>
+                                <img id="countryFlag" src="https://placehold.co/32x20/2a2a4e/e0e0e0?text=国旗" alt="国旗" class="w-8 h-5 rounded-sm shadow-md">
+                            </div>
+                            <p id="joinDate" class="text-sm opacity-80 text-shadow-sm">加入日期: </p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="card p-4 sm:p-6">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-5 text-center">
+                        <div>
+                            <p class="text-sm opacity-70">全球排名</p>
+                            <p id="playerGlobalRank" class="text-2xl font-bold stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">国内排名</p>
+                            <p id="playerCountryRank" class="text-2xl font-bold stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">PP</p>
+                            <p id="playerPP" class="text-2xl font-bold stat-value"></p>
+                        </div>
+                         <div>
+                            <p class="text-sm opacity-70">等级</p>
+                            <p id="playerLevel" class="text-2xl font-bold stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">准确率</p>
+                            <p id="playerAccuracy" class="text-xl stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">游戏次数</p>
+                            <p id="playerPlaycount" class="text-xl stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">游玩时间</p>
+                            <p id="playerPlaytime" class="text-xl stat-value"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm opacity-70">Ranked 分数</p>
+                            <p id="playerRankedScore" class="text-xl stat-value"></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="topPlaysAnalysisSection" class="page-content hidden mt-6">
+                <h3 class="section-title">Top 100 Plays 分析</h3>
+                <div class="card p-4 sm:p-6 space-y-4">
+                    <div>
+                        <h4 class="analysis-subtitle">PP 分布:</h4> 
+                        <div id="ppScatterChartContainer" class="chart-container">
+                            <canvas id="ppScatterChart"></canvas>
+                            <div id="ppChartStats" class="chart-stats-overlay"></div>
+                        </div>
+                    </div>
+                     <div>
+                         <h4 class="analysis-subtitle">谱面作者 统计:</h4> 
+                         <div id="mapperScatterChartContainer" class="chart-container"> <canvas id="mapperScatterChart"></canvas> </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 pt-4">
+                        <div> 
+                            <h4 class="analysis-subtitle text-center">Rank 分布</h4> 
+                            <div id="rankChartContainer" class="pie-chart-container"><canvas id="rankPieChart"></canvas></div> 
+                        </div>
+                        <div> 
+                            <h4 class="analysis-subtitle text-center">谱面时长分布</h4> 
+                            <div id="lengthChartContainer" class="pie-chart-container"><canvas id="lengthPieChart"></canvas></div> 
+                        </div>
+                        <div> 
+                            <h4 class="analysis-subtitle text-center">BPM 分布</h4> 
+                            <div id="bpmChartContainer" class="pie-chart-container"><canvas id="bpmPieChart"></canvas></div> 
+                        </div>
+                        <div> 
+                            <h4 class="analysis-subtitle text-center">Mods 分布</h4> 
+                            <div id="modsChartContainer" class="pie-chart-container"><canvas id="modsPieChart"></canvas></div> 
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="topPlaysSection" class="page-content hidden mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="section-title mb-0 border-b-0 pb-0">最佳表现 (Top 100 Plays)</h3>
+                    <div id="filteredPpDisplay" class="text-lg hidden">
+                        筛选后权重PP: <span class="font-bold" style="color: var(--stat-value-color);">0</span>
+                    </div>
+                </div>
+                <div id="topPlaysSortAndFilterControls" class="card p-4 my-4 space-y-4 hidden">
+                    <div class="flex justify-between items-center mb-2 flex-wrap gap-y-2">
+                        <div class="sort-controls-row">
+                             <span class="sort-label">排序：</span>
+                             <div id="sortHeaderContainer" class="sort-header-container">
+                                <div class="sort-header active" data-sort="pp">PP <span class="sort-arrow">▼</span></div>
+                                <div class="sort-header" data-sort="accuracy">ACC <span class="sort-arrow"></span></div>
+                                <div class="sort-header" data-sort="difficulty">难度 <span class="sort-arrow"></span></div>
+                                <div class="sort-header" data-sort="length">时长 <span class="sort-arrow"></span></div>
+                                <div class="sort-header" data-sort="date">日期 <span class="sort-arrow"></span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <label class="flex items-center text-sm font-medium"><input type="checkbox" id="selectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
+                             <span class="opacity-30">|</span>
+                             <span title="请允许浏览器同时打开多个窗口！" class="cursor-help">📎</span>
+                             <button id="downloadSelectedBtn" class="download-btn">下载选中谱面</button>
+                        </div>
+                    </div>
+                    <div class="filter-controls-row">
+                        <div class="filter-group mods-group">
+                            <label class="w-full sm:w-auto">Mods:</label>
+                            <div id="modMatchToggle" class="sort-header active" data-match-mode="contains">包含</div>
+                            <span class="opacity-30 mx-1">|</span>
+                            <label><input type="checkbox" name="modFilter" value="NM"> NM</label>
+                            <label><input type="checkbox" name="modFilter" value="NF"> NF</label>
+                            <label><input type="checkbox" name="modFilter" value="EZ"> EZ</label>
+                            <label><input type="checkbox" name="modFilter" value="HD"> HD</label>
+                            <label><input type="checkbox" name="modFilter" value="HR"> HR</label>
+                            <label><input type="checkbox" name="modFilter" value="HT"> HT</label>
+                            <label><input type="checkbox" name="modFilter" value="DT"> DT/NC</label>
+                            <label><input type="checkbox" name="modFilter" value="TD"> TD</label> 
+                        </div>
+                        <div class="filter-group combo-group">
+                            <label id="fcFilterLabel">Combo状态:</label>
+                            <select id="fcFilter" class="select-field" aria-labelledby="fcFilterLabel">
+                                <option value="all">全部</option>
+                                <option value="fc">仅 FC</option>
+                                <option value="nofc">非 FC</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div id="topPlays" class="space-y-3 p-1"></div>
+            </section>
+
+            <section id="recentPlaysSection" class="page-content hidden mt-6">
+                <h3 class="section-title">最近游玩</h3>
+                <div id="recentPlays" class="space-y-3 p-1">
+                    <!-- 最近游玩记录将在这里被懒加载 -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="audioPlayer" class="hidden">
+        <audio id="audioElement"></audio>
+        <div id="player-top-row">
+            <div id="player-info-container">
+                <span id="player-info">
+                    <span id="player-info-text"></span>
+                </span>
+            </div>
+            <button id="player-close-btn" title="关闭播放器">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+            </button>
+        </div>
+        <div id="player-progress-container">
+            <input type="range" id="player-progress-bar" value="0" min="0" max="100">
+            <div id="player-time-container">
+                <span id="player-current-time">00:00</span>
+                <span id="player-duration">00:00</span>
+            </div>
+        </div>
+        <div id="player-controls">
+            <button id="player-play-pause-btn" title="播放/暂停">
+                <svg id="player-play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
+                <svg id="player-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="hidden" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM6 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3z"/></svg>
+            </button>
+            <div class="flex-grow"></div>
+            <div id="player-volume-container">
+                 <svg id="player-volume-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/><path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/></svg>
+                 <input type="range" id="player-volume-slider" value="0.5" min="0" max="1" step="0.01">
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast"></div>
+
+    <!-- 链接到您的自定义脚本 -->
+    <script src="script.js"></script>
+ </body>
+ </html>
