@@ -35,6 +35,7 @@ const dom = {
     recentBpOnlyCheckbox: document.getElementById('recentBpOnly'),
     recentSelectAllCheckbox: document.getElementById('recentSelectAllCheckbox'),
     recentDownloadSelectedBtn: document.getElementById('recentDownloadSelectedBtn'),
+    refreshRecentPlaysBtn: document.getElementById('refreshRecentPlaysBtn'),
     modMatchToggle: document.getElementById('modMatchToggle'),
     selectAllCheckbox: document.getElementById('selectAllCheckbox'),
     downloadSelectedBtn: document.getElementById('downloadSelectedBtn'),
@@ -335,6 +336,101 @@ async function fetchAndRenderRecentPlays() {
     } catch(error) {
         console.error("获取最近游玩记录时出错:", error);
         dom.recentPlaysDiv.innerHTML = `<p class="text-red-400 text-center p-4">加载最近游玩记录失败: ${error.message}</p>`;
+    }
+}
+
+async function handleRecentPlaysRefresh() {
+    if (!currentPlayer) return;
+
+    const btn = dom.refreshRecentPlaysBtn;
+    btn.disabled = true;
+    btn.innerHTML = '🔄 刷新中...';
+
+    try {
+        const existingPlayIds = new Set(recentPlaysDetails.map(d => d.playData.id));
+        if (existingPlayIds.size === 0) {
+            await fetchAndRenderRecentPlays();
+            showToast("已加载最新成绩。");
+            return;
+        }
+
+        let newPlays = [];
+        let foundExisting = false;
+        let offset = 0;
+        const limit = 50;
+
+        while (!foundExisting && offset < 500) { // Safety break after 10 pages
+            const recentData = await fetchV2Api(`users/${currentPlayer.id}/scores/recent?include_fails=1&limit=${limit}&offset=${offset}&mode=osu`);
+
+            if (!recentData || recentData.length === 0) {
+                break; 
+            }
+
+            for (const play of recentData) {
+                if (existingPlayIds.has(play.id)) {
+                    foundExisting = true;
+                    break;
+                }
+                newPlays.push(play);
+            }
+            
+            if (recentData.length < limit) {
+                break;
+            }
+
+            offset += limit;
+        }
+
+        if (newPlays.length > 0) {
+            const newPlayIds = newPlays.map(p => p.beatmap.id);
+            let beatmapMap = new Map();
+            if (newPlayIds.length > 0) {
+                 const idsQuery = newPlayIds.map(id => `ids[]=${id}`).join('&');
+                 const fullBeatmapsData = await fetchV2Api(`beatmaps?${idsQuery}`);
+                 if (fullBeatmapsData?.beatmaps) {
+                     beatmapMap = new Map(fullBeatmapsData.beatmaps.map(b => [b.id, b]));
+                 }
+            }
+
+            const topPlaysMap = new Map(originalTopPlaysDetails.map(p => [p.playData.id, p]));
+
+            const newPlaysDetails = newPlays.map(play => {
+                const isBp = play.best_id && topPlaysMap.has(play.best_id);
+                const bpDetails = isBp ? topPlaysMap.get(play.best_id) : null;
+                return {
+                    playData: bpDetails ? bpDetails.playData : play,
+                    beatmapData: beatmapMap.get(play.beatmap.id) || play.beatmap,
+                    beatmapsetData: play.beatmapset,
+                    isBp: isBp,
+                    bpDetails: bpDetails,
+                };
+            }).filter(detail => detail.beatmapData && detail.beatmapsetData);
+
+            recentPlaysDetails = [...newPlaysDetails, ...recentPlaysDetails];
+            recentPlaysDetails.forEach((d, i) => d.recentIndex = i); // Re-index all
+
+            renderFilteredRecentPlays();
+            showToast(`找到了 ${newPlays.length} 个新成绩！`);
+
+            setTimeout(() => {
+                const allCards = dom.recentPlaysDiv.querySelectorAll('.glass-card');
+                for (let i = 0; i < newPlays.length; i++) {
+                    if (allCards[i]) {
+                        allCards[i].classList.add('flash-bg-animation', 'flash-glow-animation');
+                    }
+                }
+            }, 100);
+
+        } else {
+            showToast("没有新的成绩。");
+        }
+
+    } catch (error) {
+        console.error("刷新最近成绩时出错:", error);
+        showToast(`刷新失败: ${error.message}`);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔄 刷新';
     }
 }
 
@@ -1158,6 +1254,8 @@ function setupEventListeners() {
         }
         ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
     });
+
+    dom.refreshRecentPlaysBtn.addEventListener('click', handleRecentPlaysRefresh);
 
 
     setupAudioPlayerListeners();
