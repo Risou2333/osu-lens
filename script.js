@@ -85,8 +85,8 @@ const chartCanvases = {
 const activeCharts = {};
 
 // --- 应用状态管理 ---
-let currentPlayer = null; // OPTIMIZATION: Store current player data
-let recentPlaysLoaded = false; // OPTIMIZATION: Flag for lazy loading
+let currentPlayer = null;
+let recentPlaysLoaded = false;
 let originalTopPlaysDetails = [];
 let processedPlayDetailsForChart = [];
 let state = {
@@ -202,14 +202,12 @@ async function handleSearch() {
             return; 
         }
         
-        // OPTIMIZATION: Store player data and reset lazy load flag
         currentPlayer = player;
         recentPlaysLoaded = false;
         dom.recentPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">点击标签页以加载最近游玩记录。</p>';
 
         setLoading(true, `正在加载 ${player.username} 的 Top Plays...`);
         
-        // OPTIMIZATION: Only fetch top plays initially
         const topPlaysData = await fetchV2Api(`users/${player.id}/scores/best?limit=100&mode=osu`);
 
         let beatmapMap = new Map();
@@ -266,7 +264,6 @@ async function handleSearch() {
     }
 }
 
-// OPTIMIZATION: New function to lazy load recent plays
 async function fetchAndRenderRecentPlays() {
     if (recentPlaysLoaded || !currentPlayer) return;
 
@@ -316,7 +313,7 @@ function setLoading(isLoading, message = "正在加载数据...", isInitialLoad 
         dom.navLinksContainer.classList.add('hidden');
 
         if (isInitialLoad) {
-            currentPlayer = null; // Reset current player
+            currentPlayer = null;
             recentPlaysLoaded = false;
             dom.recentPlaysDiv.innerHTML = '';
             dom.topPlaysDiv.innerHTML = '';
@@ -417,7 +414,6 @@ function createPlayCardHTML(play, beatmap, beatmapset, type, index) {
 }
 
 function showPage(pageId) {
-    // OPTIMIZATION: Trigger lazy load on tab click
     if (pageId === 'recentPlaysSection') {
         fetchAndRenderRecentPlays();
     }
@@ -436,7 +432,6 @@ function renderFilteredAndSortedTopPlays() {
 
     let playsToDisplay = [...originalTopPlaysDetails];
     
-    // Mods 筛选
     if (state.activeModFilters.length) {
         playsToDisplay = playsToDisplay.filter(detail => {
             const playMods = detail.playData.mods;
@@ -445,12 +440,10 @@ function renderFilteredAndSortedTopPlays() {
             if (filterMods.includes('NM')) return playMods.length === 0;
             
             if (state.modMatchMode === 'exact') {
-                // 完全匹配模式
                 const normalizedPlayMods = playMods.map(m => m === 'NC' ? 'DT' : m).sort();
                 const normalizedFilterMods = filterMods.map(m => m === 'NC' ? 'DT' : m).sort();
                 return JSON.stringify(normalizedPlayMods) === JSON.stringify(normalizedFilterMods);
             }
-            // 包含模式
             return filterMods.every(filterMod =>
                 (filterMod === 'DT' && (playMods.includes('DT') || playMods.includes('NC'))) ||
                 playMods.includes(filterMod)
@@ -458,7 +451,6 @@ function renderFilteredAndSortedTopPlays() {
         });
     }
 
-    // FC 状态筛选
     if (state.fcFilterStatus !== 'all') {
         playsToDisplay = playsToDisplay.filter(d => {
             const isFc = d.playData.perfect && d.playData.statistics.count_miss === 0;
@@ -466,11 +458,9 @@ function renderFilteredAndSortedTopPlays() {
         });
     }
     
-    // 更新筛选后的加权 PP
     const totalFilteredWeightedPp = playsToDisplay.reduce((sum, d) => sum + (parseFloat(d.playData.pp) || 0) * (0.95 ** d.originalIndex), 0);
     dom.filteredPpDisplay.querySelector('span').textContent = formatNumber(totalFilteredWeightedPp, {maximumFractionDigits: 0});
 
-    // 排序
     const sortFns = {
         accuracy: (a, b) => (a.playData.accuracy || 0) - (b.playData.accuracy || 0),
         difficulty: (a, b) => (a.beatmapData.difficulty_rating || 0) - (b.beatmapData.difficulty_rating || 0),
@@ -483,7 +473,6 @@ function renderFilteredAndSortedTopPlays() {
         return (sortFns[state.sortCriteria] || sortFns.pp)(a, b) * order;
     });
 
-    // 渲染列表
     dom.selectAllCheckbox.checked = false;
     dom.topPlaysDiv.innerHTML = playsToDisplay.length 
         ? playsToDisplay.map(d => createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.originalIndex)).join('')
@@ -793,8 +782,6 @@ function setupAudioPlayerListeners() {
         const cover = e.target.closest('.beatmap-cover-container');
         if (cover?.dataset.beatmapsetId) {
             playAudio(cover.dataset.beatmapsetId, cover.dataset.songTitle);
-        } else if (e.target.closest('.main-content')) {
-            e.target.closest('.glass-card')?.classList.toggle('selected');
         }
     });
 
@@ -851,91 +838,124 @@ function closePlayer() {
 function setupDragToSelectListeners() {
     const container = dom.topPlaysDiv;
     let isDragging = false;
+    let dragHappened = false;
     let startIndex = -1;
-    let initialSelectedState = new Map();
     let dragAction = 'select';
     let allCards = [];
     let scrollInterval = null;
 
-    const updateSelection = (currentIndex) => {
-        allCards.forEach((card, i) => {
-            const originalState = initialSelectedState.get(card);
-            if (originalState) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
-            }
-        });
+    const updateSelectionPreview = (currentIndex) => {
+        if (startIndex === -1) return;
+
+        allCards.forEach(card => card.classList.remove('drag-over'));
 
         const min = Math.min(startIndex, currentIndex);
         const max = Math.max(startIndex, currentIndex);
 
         for (let i = min; i <= max; i++) {
-            if (dragAction === 'select') {
-                allCards[i].classList.add('selected');
-            } else {
-                allCards[i].classList.remove('selected');
+            if (allCards[i]) {
+                allCards[i].classList.add('drag-over');
             }
-        }
-
-        const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
-        if (dom.selectAllCheckbox) {
-            dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
         }
     };
 
     container.addEventListener('mousedown', e => {
-        if (e.target.closest('a, button, .beatmap-cover-container')) {
-            return;
-        }
+        if (e.target.closest('a, button, .beatmap-cover-container')) return;
         e.preventDefault();
 
-        isDragging = true;
-        allCards = Array.from(container.querySelectorAll('.glass-card'));
-        initialSelectedState.clear();
-        allCards.forEach(card => {
-            initialSelectedState.set(card, card.classList.contains('selected'));
-        });
-        
         const card = e.target.closest('.glass-card');
         if (card) {
+            isDragging = true;
+            dragHappened = false;
+            allCards = Array.from(container.querySelectorAll('.glass-card'));
             startIndex = allCards.indexOf(card);
             dragAction = card.classList.contains('selected') ? 'deselect' : 'select';
-            updateSelection(startIndex);
+            updateSelectionPreview(startIndex);
         }
     });
 
     container.addEventListener('mouseover', e => {
         if (!isDragging) return;
-        const card = e.target.closest('.glass-card');
-        if (card) {
-            updateSelection(allCards.indexOf(card));
+        dragHappened = true;
+        
+        const currentCard = e.target.closest('.glass-card');
+        if (currentCard) {
+            const currentIndex = allCards.indexOf(currentCard);
+            updateSelectionPreview(currentIndex);
         }
     });
 
-    const stopDragging = () => {
+    const stopDragging = (e) => {
         if (!isDragging) return;
+
+        allCards.forEach(card => card.classList.remove('drag-over'));
+
+        if (dragHappened) {
+            const endCard = e.target.closest('.glass-card');
+            if (startIndex !== -1 && endCard) {
+                const endIndex = allCards.indexOf(endCard);
+                const min = Math.min(startIndex, endIndex);
+                const max = Math.max(startIndex, endIndex);
+
+                for (let i = min; i <= max; i++) {
+                    if (allCards[i]) {
+                        if (dragAction === 'select') {
+                            allCards[i].classList.add('selected');
+                        } else {
+                            allCards[i].classList.remove('selected');
+                        }
+                    }
+                }
+            }
+        }
+        
         isDragging = false;
         clearInterval(scrollInterval);
-        scrollInterval = null;
+
+        setTimeout(() => {
+            dragHappened = false;
+            const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
+            if (dom.selectAllCheckbox) {
+                dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+            }
+        }, 0);
     };
 
     const handleAutoScroll = (e) => {
         if (!isDragging) return;
         clearInterval(scrollInterval);
-        scrollInterval = null;
         const viewportHeight = window.innerHeight;
         const scrollThreshold = 80;
         const scrollSpeed = 15;
         if (e.clientY < scrollThreshold) {
-            scrollInterval = setInterval(() => { window.scrollBy(0, -scrollSpeed); }, 15);
+            scrollInterval = setInterval(() => window.scrollBy(0, -scrollSpeed), 15);
         } else if (e.clientY > viewportHeight - scrollThreshold) {
-            scrollInterval = setInterval(() => { window.scrollBy(0, scrollSpeed); }, 15);
+            scrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 15);
+        } else {
+            clearInterval(scrollInterval);
+            scrollInterval = null;
         }
     };
 
     window.addEventListener('mouseup', stopDragging, true);
     window.addEventListener('mousemove', handleAutoScroll);
+
+    container.addEventListener('click', e => {
+        if (e.target.closest('a, button, .beatmap-cover-container')) return;
+        
+        if (!dragHappened) {
+            const card = e.target.closest('.glass-card');
+            if (card) {
+                card.classList.toggle('selected');
+                
+                const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
+                if (dom.selectAllCheckbox) {
+                    allCards = Array.from(container.querySelectorAll('.glass-card'));
+                    dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+                }
+            }
+        }
+    });
 }
 
 // --- 事件监听器设置 ---
