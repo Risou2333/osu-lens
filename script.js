@@ -29,6 +29,12 @@ const dom = {
     topPlaysAnalysisSection: document.getElementById('topPlaysAnalysisSection'),
     topPlaysSortAndFilterControls: document.getElementById('topPlaysSortAndFilterControls'),
     filteredPpDisplay: document.getElementById('filteredPpDisplay'),
+    recentPlaysControls: document.getElementById('recentPlaysControls'),
+    recentPpGainDisplay: document.getElementById('recentPpGainDisplay'),
+    recentPassOnlyCheckbox: document.getElementById('recentPassOnly'),
+    recentBpOnlyCheckbox: document.getElementById('recentBpOnly'),
+    recentSelectAllCheckbox: document.getElementById('recentSelectAllCheckbox'),
+    recentDownloadSelectedBtn: document.getElementById('recentDownloadSelectedBtn'),
     modMatchToggle: document.getElementById('modMatchToggle'),
     selectAllCheckbox: document.getElementById('selectAllCheckbox'),
     downloadSelectedBtn: document.getElementById('downloadSelectedBtn'),
@@ -88,6 +94,7 @@ const activeCharts = {};
 let currentPlayer = null;
 let recentPlaysLoaded = false;
 let originalTopPlaysDetails = [];
+let recentPlaysDetails = [];
 let processedPlayDetailsForChart = [];
 let state = {
     sortCriteria: 'pp',
@@ -96,6 +103,8 @@ let state = {
     fcFilterStatus: 'all',
     modMatchMode: 'contains',
     activePage: 'playerInfoSection',
+    recentPassOnly: false,
+    recentBpOnly: false,
 };
 let toastTimeout;
 
@@ -111,6 +120,17 @@ const formatPlaytime = (s) => {
 const formatDuration = (s) => isNaN(s) || s === null ? '00:00' : `${String(Math.floor(s/60)).padStart(2, '0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 const calculateAverage = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 const calculateVariance = (arr, mean) => arr.length ? arr.reduce((a, v) => a + (v - mean)**2, 0) / arr.length : 0;
+const getPpIcon = (pp) => {
+    if (pp === 0) return '🛌';
+    if (pp > 0 && pp <= 1) return '🧑‍🦽';
+    if (pp > 1 && pp <= 10) return '🚶';
+    if (pp > 10 && pp <= 20) return '🚴';
+    if (pp > 20 && pp <= 40) return '🚗';
+    if (pp > 40 && pp <= 60) return '🚅';
+    if (pp > 60 && pp <= 100) return '🛫';
+    if (pp > 100) return '🚀';
+    return '➖'; // Default for negative or other cases
+};
 
 // --- API & 数据获取 ---
 async function getAccessToken(id, secret, isSilent = false) {
@@ -205,6 +225,8 @@ async function handleSearch() {
         currentPlayer = player;
         recentPlaysLoaded = false;
         dom.recentPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">点击标签页以加载最近游玩记录。</p>';
+        [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.add('hidden'));
+
 
         setLoading(true, `正在加载 ${player.username} 的 Top Plays...`);
         
@@ -273,11 +295,10 @@ async function fetchAndRenderRecentPlays() {
     </div>`;
     
     try {
-        const recentPlaysData = await fetchV2Api(`users/${currentPlayer.id}/scores/recent?limit=100&mode=osu`);
+        const recentPlaysData = await fetchV2Api(`users/${currentPlayer.id}/scores/recent?include_fails=1&limit=50&mode=osu`);
         
         let beatmapMap = new Map();
         const recentIds = recentPlaysData?.map(p => p.beatmap.id) || [];
-
         if (recentIds.length > 0) {
             const idsQuery = recentIds.map(id => `ids[]=${id}`).join('&');
             const fullBeatmapsData = await fetchV2Api(`beatmaps?${idsQuery}`);
@@ -287,13 +308,27 @@ async function fetchAndRenderRecentPlays() {
         }
 
         if (recentPlaysData?.length) {
-            const recentPlaysHTML = recentPlaysData.map((play, index) => {
-                const fullBeatmap = beatmapMap.get(play.beatmap.id) || play.beatmap;
-                return createPlayCardHTML(play, fullBeatmap, play.beatmapset, 'recent', index);
-            }).join('');
-            dom.recentPlaysDiv.innerHTML = recentPlaysHTML;
+            const topPlaysMap = new Map(originalTopPlaysDetails.map(p => [p.playData.id, p]));
+            
+            recentPlaysDetails = recentPlaysData.map((play, index) => {
+                const isBp = play.best_id && topPlaysMap.has(play.best_id);
+                const bpDetails = isBp ? topPlaysMap.get(play.best_id) : null;
+                return {
+                    playData: bpDetails ? bpDetails.playData : play,
+                    beatmapData: beatmapMap.get(play.beatmap.id) || play.beatmap,
+                    beatmapsetData: play.beatmapset,
+                    isBp: isBp,
+                    bpDetails: bpDetails,
+                    recentIndex: index,
+                };
+            }).filter(detail => detail.beatmapData && detail.beatmapsetData);
+
+            renderFilteredRecentPlays();
+            [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.remove('hidden'));
+
         } else {
             dom.recentPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">该玩家暂无最近游玩记录。</p>';
+            [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.add('hidden'));
         }
         recentPlaysLoaded = true;
 
@@ -302,6 +337,7 @@ async function fetchAndRenderRecentPlays() {
         dom.recentPlaysDiv.innerHTML = `<p class="text-red-400 text-center p-4">加载最近游玩记录失败: ${error.message}</p>`;
     }
 }
+
 
 // --- UI 渲染 & 更新 ---
 function setLoading(isLoading, message = "正在加载数据...", isInitialLoad = false) {
@@ -321,6 +357,7 @@ function setLoading(isLoading, message = "正在加载数据...", isInitialLoad 
             Object.values(activeCharts).forEach(chart => chart?.destroy());
             Object.keys(activeCharts).forEach(key => delete activeCharts[key]);
             originalTopPlaysDetails = [];
+            recentPlaysDetails = [];
             processedPlayDetailsForChart = [];
         }
     }
@@ -353,36 +390,40 @@ function renderPlayerInfo(player) {
     p.rankedScore.textContent = formatNumber(stats.ranked_score);
 }
 
-function createPlayCardHTML(play, beatmap, beatmapset, type, index) {
+function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpInRecent = false) {
     if (!play || !beatmap || !beatmapset) return '';
     const rank = play.rank.toUpperCase();
     const songTitle = `${beatmapset.artist} - ${beatmapset.title}`;
     const isFc = play.perfect && play.statistics.count_miss === 0;
 
     const ppValue = parseFloat(play.pp) || 0;
-    const weightedPp = ppValue * (0.95 ** index);
-
-    const ppAndDateHTML = type === 'top'
+    const isTopPlay = type === 'top' || isBpInRecent;
+    const weightedPp = isTopPlay ? (ppValue * (0.95 ** index)) : 0;
+    const extraClasses = isBpInRecent ? 'bp-highlight' : '';
+    
+    const ppAndDateHTML = isTopPlay
         ? `<div class="text-center">
                 <span class="text-xs opacity-60">${new Date(play.created_at).toLocaleDateString('sv-SE')}</span>
                 <div class="mt-1">
                     <p class="text-xl sm:text-2xl pp-display leading-tight">${ppValue.toFixed(0)}</p>
-                    <p class="text-xs opacity-80 leading-tight">(${weightedPp.toFixed(0)})</p>
+                    <p class="text-xs opacity-80 leading-tight">(${(weightedPp).toFixed(1)})</p>
                     <p class="pp-label leading-tight">PP</p>
                 </div>
            </div>`
         : `<div class="text-center">
-                <p class="text-xl sm:text-2xl pp-display">${play.pp ? play.pp.toFixed(0) : '?'}</p>
+                <span class="text-xs opacity-60">${new Date(play.created_at).toLocaleDateString('sv-SE')}</span>
+                <p class="text-xl sm:text-2xl pp-display mt-1">${play.pp ? play.pp.toFixed(0) : '?'}</p>
                 <p class="pp-label">PP</p>
            </div>`;
 
     const downloadUrl = `${downloadSourceInfo[downloadSource].url}${beatmap.beatmapset_id || beatmapset.id}`;
+    const cardId = isBpInRecent ? `recent-bp-play-${index}` : `${type}-play-${index}`;
 
     return `
-        <div id="${type}-play-${index}" class="glass-card p-2 flex items-stretch space-x-3" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
+        <div id="${cardId}" class="glass-card p-2 flex items-stretch space-x-3 ${extraClasses}" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
             <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-song-title="${songTitle}">
                 <img src="${beatmapset.covers.cover}" alt="谱面封面" class="beatmap-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x70/2a2a4e/e0e0e0?text=无封面';">
-                ${type === 'top' ? `<div class="bp-indicator">BP ${index + 1}</div>` : ''}
+                ${isTopPlay ? `<div class="bp-indicator">BP ${index + 1}</div>` : ''}
             </div>
             <div class="flex-grow min-w-0 main-content py-1">
                 <h4 class="text-base font-semibold leading-tight" style="color: var(--primary-color);"><a href="https://osu.ppy.sh/b/${beatmap.id}" target="_blank" rel="noopener noreferrer" class="beatmap-title-link">${songTitle} <span class="opacity-70 text-sm">[${beatmap.version}]</span></a></h4>
@@ -413,6 +454,37 @@ function createPlayCardHTML(play, beatmap, beatmapset, type, index) {
     `;
 }
 
+function renderFilteredRecentPlays() {
+    if (!recentPlaysDetails?.length) return;
+
+    let playsToDisplay = [...recentPlaysDetails];
+
+    if (state.recentPassOnly) {
+        playsToDisplay = playsToDisplay.filter(d => d.playData.rank !== 'F');
+    }
+    if (state.recentBpOnly) {
+        playsToDisplay = playsToDisplay.filter(d => d.isBp);
+    }
+
+    const ppGain = playsToDisplay.filter(d => d.isBp)
+        .reduce((sum, d) => sum + ((d.playData.pp || 0) * (0.95 ** d.bpDetails.originalIndex)), 0);
+
+    dom.recentPpGainDisplay.querySelector('.pp-gain-icon').textContent = getPpIcon(ppGain);
+    dom.recentPpGainDisplay.querySelector('span:last-child').textContent = `${ppGain >= 0 ? '+' : ''}${ppGain.toFixed(1)}pp`;
+    
+    dom.recentPlaysDiv.innerHTML = playsToDisplay.length
+        ? playsToDisplay.map(d => {
+            if (d.isBp) {
+                return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.bpDetails.originalIndex, true);
+            } else {
+                return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'recent', d.recentIndex);
+            }
+        }).join('')
+        : '<p class="opacity-70 text-center p-4">没有符合筛选条件的最近游玩记录。</p>';
+    
+    dom.recentSelectAllCheckbox.checked = false;
+}
+
 function showPage(pageId) {
     if (pageId === 'recentPlaysSection') {
         fetchAndRenderRecentPlays();
@@ -434,22 +506,25 @@ function renderFilteredAndSortedTopPlays() {
     
     if (state.activeModFilters.length) {
         playsToDisplay = playsToDisplay.filter(detail => {
-            const playMods = detail.playData.mods;
+            const playMods = detail.playData.mods.length ? detail.playData.mods : ['NM'];
             const filterMods = state.activeModFilters;
-
-            if (filterMods.includes('NM')) return playMods.length === 0;
             
+            if (filterMods.includes('NM') && playMods.includes('NM')) return true;
+            if (filterMods.includes('NM') && !playMods.includes('NM')) return false;
+
+            const normalizedPlayMods = playMods.map(m => m === 'NC' ? 'DT' : m);
+
             if (state.modMatchMode === 'exact') {
-                const normalizedPlayMods = playMods.map(m => m === 'NC' ? 'DT' : m).sort();
-                const normalizedFilterMods = filterMods.map(m => m === 'NC' ? 'DT' : m).sort();
-                return JSON.stringify(normalizedPlayMods) === JSON.stringify(normalizedFilterMods);
+                 const normalizedFilterMods = filterMods.map(m => m === 'NC' ? 'DT' : m).sort();
+                 return JSON.stringify(normalizedPlayMods.sort()) === JSON.stringify(normalizedFilterMods);
             }
             return filterMods.every(filterMod =>
-                (filterMod === 'DT' && (playMods.includes('DT') || playMods.includes('NC'))) ||
-                playMods.includes(filterMod)
+                (filterMod === 'DT' && (normalizedPlayMods.includes('DT'))) ||
+                (filterMod !== 'DT' && normalizedPlayMods.includes(filterMod))
             );
         });
     }
+
 
     if (state.fcFilterStatus !== 'all') {
         playsToDisplay = playsToDisplay.filter(d => {
@@ -834,9 +909,11 @@ function closePlayer() {
     updatePlayPauseIcon(false);
 }
 
-// --- 拖拽选择 ---
-function setupDragToSelectListeners() {
-    const container = dom.topPlaysDiv;
+// --- 拖拽选择 (可重用) ---
+function setupDragToSelect(config) {
+    const { container, selectAllCheckbox } = config;
+    if (!container) return;
+
     let isDragging = false;
     let dragHappened = false;
     let startIndex = -1;
@@ -846,23 +923,17 @@ function setupDragToSelectListeners() {
 
     const updateSelectionPreview = (currentIndex) => {
         if (startIndex === -1) return;
-
         allCards.forEach(card => card.classList.remove('drag-over'));
-
         const min = Math.min(startIndex, currentIndex);
         const max = Math.max(startIndex, currentIndex);
-
         for (let i = min; i <= max; i++) {
-            if (allCards[i]) {
-                allCards[i].classList.add('drag-over');
-            }
+            if (allCards[i]) allCards[i].classList.add('drag-over');
         }
     };
 
     container.addEventListener('mousedown', e => {
         if (e.target.closest('a, button, .beatmap-cover-container')) return;
         e.preventDefault();
-
         const card = e.target.closest('.glass-card');
         if (card) {
             isDragging = true;
@@ -877,7 +948,6 @@ function setupDragToSelectListeners() {
     container.addEventListener('mouseover', e => {
         if (!isDragging) return;
         dragHappened = true;
-        
         const currentCard = e.target.closest('.glass-card');
         if (currentCard) {
             const currentIndex = allCards.indexOf(currentCard);
@@ -887,36 +957,28 @@ function setupDragToSelectListeners() {
 
     const stopDragging = (e) => {
         if (!isDragging) return;
-
         allCards.forEach(card => card.classList.remove('drag-over'));
-
         if (dragHappened) {
             const endCard = e.target.closest('.glass-card');
             if (startIndex !== -1 && endCard) {
                 const endIndex = allCards.indexOf(endCard);
                 const min = Math.min(startIndex, endIndex);
                 const max = Math.max(startIndex, endIndex);
-
                 for (let i = min; i <= max; i++) {
                     if (allCards[i]) {
-                        if (dragAction === 'select') {
-                            allCards[i].classList.add('selected');
-                        } else {
-                            allCards[i].classList.remove('selected');
-                        }
+                        allCards[i].classList.toggle('selected', dragAction === 'select');
                     }
                 }
             }
         }
-        
         isDragging = false;
         clearInterval(scrollInterval);
-
         setTimeout(() => {
             dragHappened = false;
-            const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
-            if (dom.selectAllCheckbox) {
-                dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+            if (selectAllCheckbox) {
+                const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
+                allCards = Array.from(container.querySelectorAll('.glass-card'));
+                selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
             }
         }, 0);
     };
@@ -931,9 +993,6 @@ function setupDragToSelectListeners() {
             scrollInterval = setInterval(() => window.scrollBy(0, -scrollSpeed), 15);
         } else if (e.clientY > viewportHeight - scrollThreshold) {
             scrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 15);
-        } else {
-            clearInterval(scrollInterval);
-            scrollInterval = null;
         }
     };
 
@@ -942,21 +1001,20 @@ function setupDragToSelectListeners() {
 
     container.addEventListener('click', e => {
         if (e.target.closest('a, button, .beatmap-cover-container')) return;
-        
         if (!dragHappened) {
             const card = e.target.closest('.glass-card');
             if (card) {
                 card.classList.toggle('selected');
-                
-                const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
-                if (dom.selectAllCheckbox) {
+                if (selectAllCheckbox) {
+                    const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
                     allCards = Array.from(container.querySelectorAll('.glass-card'));
-                    dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+                    selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
                 }
             }
         }
     });
 }
+
 
 // --- 事件监听器设置 ---
 function setupEventListeners() {
@@ -1076,6 +1134,32 @@ function setupEventListeners() {
         ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
     });
 
+    // Recent Plays Controls
+    dom.recentPassOnlyCheckbox.addEventListener('change', (e) => {
+        state.recentPassOnly = e.target.checked;
+        renderFilteredRecentPlays();
+    });
+    
+    dom.recentBpOnlyCheckbox.addEventListener('change', (e) => {
+        state.recentBpOnly = e.target.checked;
+        renderFilteredRecentPlays();
+    });
+    
+    dom.recentSelectAllCheckbox.addEventListener('change', (e) => {
+        dom.recentPlaysDiv.querySelectorAll('.glass-card').forEach(card => card.classList.toggle('selected', e.target.checked));
+    });
+
+    dom.recentDownloadSelectedBtn.addEventListener('click', () => {
+        const baseUrl = downloadSourceInfo[downloadSource].url;
+        const ids = [...new Set(Array.from(dom.recentPlaysDiv.querySelectorAll('.glass-card.selected')).map(c => c.dataset.beatmapsetId).filter(Boolean))];
+        if (ids.length === 0) {
+            showToast('请先选择要下载的谱面');
+            return;
+        }
+        ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
+    });
+
+
     setupAudioPlayerListeners();
 }
 
@@ -1084,5 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCredentials();
     setupEventListeners();
     setupBackgroundAnimation();
-    setupDragToSelectListeners();
+    // Setup drag-to-select for both sections
+    setupDragToSelect({ container: dom.topPlaysDiv, selectAllCheckbox: dom.selectAllCheckbox });
+    setupDragToSelect({ container: dom.recentPlaysDiv, selectAllCheckbox: dom.recentSelectAllCheckbox });
 });
