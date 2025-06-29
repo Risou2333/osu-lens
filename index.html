@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>osu! 玩家信息查看器</title>
-    <!-- 外部库 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <!-- 链接到您的自定义样式表 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start">
@@ -233,7 +231,10 @@
 
             <section id="recentPlaysSection" class="page-content hidden mt-6">
                 <div class="flex justify-between items-center mb-2">
-                    <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
+                    <div class="flex items-center gap-4">
+                        <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
+                        <button id="refreshRecentPlaysBtn" class="download-btn" title="刷新最近的成绩">🔄 刷新</button>
+                    </div>
                     <div id="recentPpGainDisplay" class="text-lg hidden items-center">
                         <span class="pp-gain-icon text-xl"></span>
                         <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
@@ -255,8 +256,7 @@
                     </div>
                 </div>
                 <div id="recentPlays" class="space-y-3 p-1">
-                    <!-- 最近游玩记录将在这里被懒加载 -->
-                </div>
+                    </div>
             </section>
         </div>
     </main>
@@ -295,7 +295,6 @@
     
     <div id="toast"></div>
 
-    <!-- 链接到您的自定义脚本 -->
     <script src="script.js"></script>
  </body>
  </html>
