@@ -15,6 +15,20 @@
     80%  { transform: translateX(calc(-100% + var(--marquee-parent-width, 200px))); }
     100% { transform: translateX(calc(-100% + var(--marquee-parent-width, 200px))); }
 }
+@keyframes pulse-effect {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 10px 2px color-mix(in srgb, var(--primary-color) 70%, transparent);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 15px 4px color-mix(in srgb, var(--primary-color) 90%, transparent);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 10px 2px color-mix(in srgb, var(--primary-color) 70%, transparent);
+    }
+}
 
 /* 主题颜色变量 - 暗色 */
 html {
@@ -76,10 +90,12 @@ html {
 html { scroll-behavior: smooth; }
 body { font-family: 'Inter', sans-serif; color: var(--text-color); }
 .card { backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); background-color: var(--glass-ui-bg-color); border: 1px solid var(--glass-ui-border-color); border-radius: 0.75rem; box-shadow: none; transition: background-color 0.3s ease, border-color 0.3s ease; }
-.glass-card { backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); border: 1px solid var(--glass-card-border); box-shadow: none; margin-bottom: 0.75rem; position: relative; overflow: hidden; z-index: 1; transition: border 0.2s ease, box-shadow 0.2s ease; }
+.glass-card { backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); border: 1px solid var(--glass-card-border); box-shadow: none; margin-bottom: 0.75rem; position: relative; overflow: hidden; z-index: 1; transition: border 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
 .glass-card .main-content { cursor: pointer; }
 .glass-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(var(--glass-card-overlay-color), var(--glass-card-overlay-color)), var(--bg-image-url); background-size: cover; background-position: center; z-index: -1; transition: opacity 0.3s ease; filter: blur(2px); }
 .glass-card.selected { border-color: var(--primary-color); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--primary-color) 70%, transparent); background-color: var(--highlight-bg-color); }
+.glass-card.drag-start { animation: pulse-effect 1.5s infinite; }
+.glass-card.drag-over {background-color: rgba(255, 105, 180, 0.3);box-shadow: 0 0 12px 3px color-mix(in srgb, var(--primary-color) 80%, transparent); transform: scale(1.02);transition: none;}
 .btn-primary { background-color: var(--primary-color); color: var(--primary-text-color); font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.3s ease; }
 .btn-primary:hover { background-color: var(--primary-hover-color); }
 .input-field, .select-field { background-color: var(--input-bg-color); border: 1px solid var(--input-border-color); color: var(--text-color); border-radius: 0.5rem; padding: 0.75rem; font-size: 1rem; }
