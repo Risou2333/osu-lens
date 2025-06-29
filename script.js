@@ -847,6 +847,97 @@ function closePlayer() {
     updatePlayPauseIcon(false);
 }
 
+// --- 拖拽选择 ---
+function setupDragToSelectListeners() {
+    const container = dom.topPlaysDiv;
+    let isDragging = false;
+    let startIndex = -1;
+    let initialSelectedState = new Map();
+    let dragAction = 'select';
+    let allCards = [];
+    let scrollInterval = null;
+
+    const updateSelection = (currentIndex) => {
+        allCards.forEach((card, i) => {
+            const originalState = initialSelectedState.get(card);
+            if (originalState) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+
+        const min = Math.min(startIndex, currentIndex);
+        const max = Math.max(startIndex, currentIndex);
+
+        for (let i = min; i <= max; i++) {
+            if (dragAction === 'select') {
+                allCards[i].classList.add('selected');
+            } else {
+                allCards[i].classList.remove('selected');
+            }
+        }
+
+        const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
+        if (dom.selectAllCheckbox) {
+            dom.selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+        }
+    };
+
+    container.addEventListener('mousedown', e => {
+        if (e.target.closest('a, button, .beatmap-cover-container')) {
+            return;
+        }
+        e.preventDefault();
+
+        isDragging = true;
+        allCards = Array.from(container.querySelectorAll('.glass-card'));
+        initialSelectedState.clear();
+        allCards.forEach(card => {
+            initialSelectedState.set(card, card.classList.contains('selected'));
+        });
+        
+        const card = e.target.closest('.glass-card');
+        if (card) {
+            startIndex = allCards.indexOf(card);
+            dragAction = card.classList.contains('selected') ? 'deselect' : 'select';
+            updateSelection(startIndex);
+        }
+    });
+
+    container.addEventListener('mouseover', e => {
+        if (!isDragging) return;
+        const card = e.target.closest('.glass-card');
+        if (card) {
+            updateSelection(allCards.indexOf(card));
+        }
+    });
+
+    const stopDragging = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+    };
+
+    const handleAutoScroll = (e) => {
+        if (!isDragging) return;
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+        const viewportHeight = window.innerHeight;
+        const scrollThreshold = 80;
+        const scrollSpeed = 15;
+        if (e.clientY < scrollThreshold) {
+            scrollInterval = setInterval(() => { window.scrollBy(0, -scrollSpeed); }, 15);
+        } else if (e.clientY > viewportHeight - scrollThreshold) {
+            scrollInterval = setInterval(() => { window.scrollBy(0, scrollSpeed); }, 15);
+        }
+    };
+
+    window.addEventListener('mouseup', stopDragging, true);
+    window.addEventListener('mousemove', handleAutoScroll);
+}
+
 // --- 事件监听器设置 ---
 function setupEventListeners() {
     dom.usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
@@ -973,4 +1064,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCredentials();
     setupEventListeners();
     setupBackgroundAnimation();
+    setupDragToSelectListeners();
 });
