@@ -25,7 +25,7 @@
             <nav id="navBar" class="w-full mx-auto flex items-center justify-between border-t border-b py-2" style="border-color: var(--input-border-color);">
                 <button id="toggleSearchBtn" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 transition-opacity px-2 py-1 rounded-md flex items-center gap-2" title="切换搜索框">🔍</button>
                 <div id="navLinksContainer" class="hidden sm:flex justify-center space-x-6 sm:space-x-10">
-                    <a data-page="playerInfoSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">👨‍🦽‍➡️ 玩家信息</a>
+                    <a data-page="playerInfoSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">👦 玩家信息</a>
                     <a data-page="topPlaysAnalysisSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">📊 Plays 分析</a>
                     <a data-page="topPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🏆 最佳表现</a>
                     <a data-page="recentPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🕒 最近游玩</a>
@@ -232,7 +232,28 @@
             </section>
 
             <section id="recentPlaysSection" class="page-content hidden mt-6">
-                <h3 class="section-title">最近游玩</h3>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
+                    <div id="recentPpGainDisplay" class="text-lg hidden items-center">
+                        <span class="pp-gain-icon text-xl"></span>
+                        <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
+                    </div>
+                </div>
+                <div id="recentPlaysControls" class="card p-4 my-4 hidden">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="flex items-center gap-4">
+                            <span class="sort-label">筛选：</span>
+                            <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentPassOnly" class="mr-1.5 accent-pink-500">仅Pass</label>
+                            <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentBpOnly" class="mr-1.5 accent-pink-500">仅BP</label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentSelectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
+                             <span class="opacity-30">|</span>
+                             <span title="请允许浏览器同时打开多个窗口！" class="cursor-help">📎</span>
+                             <button id="recentDownloadSelectedBtn" class="download-btn">下载选中</button>
+                        </div>
+                    </div>
+                </div>
                 <div id="recentPlays" class="space-y-3 p-1">
                     <!-- 最近游玩记录将在这里被懒加载 -->
                 </div>
