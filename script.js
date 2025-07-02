@@ -1,3 +1,6 @@
+// --- 模块导入 ---
+import init, * as rosu from './rosu_pp_js/rosu_pp_js.js';
+
 // --- 常量和全局变量定义 ---
 const OSU_API_BASE_URL = 'https://osu.ppy.sh/api/v2';
 const OSU_TOKEN_URL = 'https://osu.ppy.sh/oauth/token';
@@ -14,6 +17,7 @@ const downloadSourceInfo = {
 
 // --- DOM 元素缓存 ---
 const dom = {
+    // 主应用元素
     clientIdInput: document.getElementById('clientId'),
     clientSecretInput: document.getElementById('clientSecret'),
     sourceToggleBtn: document.getElementById('sourceToggleBtn'),
@@ -78,6 +82,39 @@ const dom = {
         globalRank: document.getElementById('playerGlobalRank'),
         countryRank: document.getElementById('playerCountryRank'),
         rankedScore: document.getElementById('playerRankedScore'),
+    },
+    // PP 计算器模态框元素
+    ppCalculator: {
+        modal: document.getElementById('pp-calculator-modal'),
+        card: document.getElementById('pp-calculator-card'),
+        title: document.querySelector('#pp-calculator-modal h2'), // Updated selector
+        closeBtn: document.getElementById('pp-calc-close-btn'),
+        body: document.getElementById('pp-calculator-body'),
+        status: document.getElementById('pp-calc-status'),
+        content: document.getElementById('pp-calc-content'),
+        info: {
+            stars: document.getElementById('pp-calc-stars'),
+            bpm: document.getElementById('pp-calc-bpm'),
+            maxCombo: document.getElementById('pp-calc-max-combo'),
+            nObjects: document.getElementById('pp-calc-n-objects'),
+            ar: document.getElementById('pp-calc-ar'),
+            od: document.getElementById('pp-calc-od'),
+            cs: document.getElementById('pp-calc-cs'),
+            hp: document.getElementById('pp-calc-hp'),
+        },
+        pp: {
+            display: document.getElementById('pp-calc-pp-display'),
+            aim: document.getElementById('pp-calc-pp-aim'),
+            speed: document.getElementById('pp-calc-pp-speed'),
+            acc: document.getElementById('pp-calc-pp-acc'),
+            fl: document.getElementById('pp-calc-pp-fl'),
+        },
+        controls: {
+            lazerCheckbox: document.getElementById('pp-calc-lazer-checkbox'),
+            advancedModeCheckbox: document.getElementById('pp-calc-advanced-mode-checkbox'),
+            modsContainer: document.getElementById('pp-calc-mods-container'),
+            scoreSimContainer: document.getElementById('pp-calc-score-sim-container'),
+        }
     }
 };
 
@@ -108,6 +145,23 @@ let state = {
     recentBpOnly: false,
 };
 let toastTimeout;
+
+// --- PP 计算器状态管理 ---
+const calculatorState = {
+    currentMap: null,
+    currentBeatmapData: null,
+    currentDiffAttrs: null,
+    totalObjects: 0,
+    isAdvancedMode: true, // Default to advanced mode
+    isLazerMode: false,
+    isInternalUpdate: false,
+    osuFileCache: new Map(),
+};
+
+const MODS_ENUM = {
+    'HD': 8, 'HR': 16, 'DT': 64, 'NC': 576, 'EZ': 2, 'HT': 256, 'FL': 1024,
+    'NF': 1, 'SO': 4096, 'TD': 4194304
+};
 
 // --- 工具函数 ---
 const formatNumber = (num, options = {}) => (Number(num) || 0).toLocaleString('en-US', options);
@@ -203,7 +257,7 @@ async function fetchV2Api(endpoint) {
     return await response.json();
 }
 
-// --- 核心业务逻辑 ---
+// --- 核心业务逻辑 (osu!lens) ---
 async function handleSearch() {
     const query = dom.usernameInput.value.trim();
     if (!query) { displayError("请输入玩家名称或ID。"); return; }
@@ -325,7 +379,7 @@ async function fetchAndRenderRecentPlays() {
             }).filter(detail => detail.beatmapData && detail.beatmapsetData);
 
             renderFilteredRecentPlays();
-            [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.remove('hidden'));
+            dom.recentPlaysControls.classList.remove('hidden');
 
         } else {
             dom.recentPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">该玩家暂无最近游玩记录。</p>';
@@ -435,7 +489,7 @@ async function handleRecentPlaysRefresh() {
 }
 
 
-// --- UI 渲染 & 更新 ---
+// --- UI 渲染 & 更新 (osu!lens) ---
 function setLoading(isLoading, message = "正在加载数据...", isInitialLoad = false) {
     dom.loadingDiv.querySelector('p').textContent = message;
     dom.loadingDiv.classList.toggle('hidden', !isLoading);
@@ -514,7 +568,12 @@ function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpInRecent
 
     const downloadUrl = `${downloadSourceInfo[downloadSource].url}${beatmap.beatmapset_id || beatmapset.id}`;
     const cardId = isBpInRecent ? `recent-bp-play-${index}` : `${type}-play-${index}`;
-
+    
+    // Sanitize data for data attributes. This is crucial for HTML attributes enclosed in single quotes.
+    const playJson = JSON.stringify(play).replace(/'/g, "&apos;");
+    const beatmapJson = JSON.stringify(beatmap).replace(/'/g, "&apos;");
+    const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
+    
     return `
         <div id="${cardId}" class="glass-card p-2 flex items-stretch space-x-3 ${extraClasses}" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
             <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-song-title="${songTitle}">
@@ -539,9 +598,12 @@ function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpInRecent
                     </div>
                 </div>
             </div>
-            <div class="flex-shrink-0 w-24 flex flex-col justify-between items-center p-1">
+            <div class="flex-shrink-0 ml-auto flex flex-col justify-between items-center p-1">
                 ${ppAndDateHTML}
                 <div class="flex items-center gap-2">
+                     <button class="pp-calc-btn download-btn" data-play='${playJson}' data-beatmap='${beatmapJson}' data-beatmapset='${beatmapsetJson}' title="分析此成绩">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8zM4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4z"/><path d="M4 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-2zm0 4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-4z"/></svg>
+                     </button>
                      <a href="osu://b/${beatmap.id}" title="在游戏中打开" class="download-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/></svg></a>
                      <a href="${downloadUrl}" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" target="_blank" rel="noopener noreferrer" title="下载铺面" class="download-btn beatmap-download-link"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg></a>
                 </div>
@@ -561,12 +623,6 @@ function renderFilteredRecentPlays() {
     if (state.recentBpOnly) {
         playsToDisplay = playsToDisplay.filter(d => d.isBp);
     }
-
-    const ppGain = playsToDisplay.filter(d => d.isBp)
-        .reduce((sum, d) => sum + ((d.playData.pp || 0) * (0.95 ** d.bpDetails.originalIndex)), 0);
-
-    dom.recentPpGainDisplay.querySelector('.pp-gain-icon').textContent = getPpIcon(ppGain);
-    dom.recentPpGainDisplay.querySelector('span:last-child').textContent = `${ppGain >= 0 ? '+' : ''}${ppGain.toFixed(1)}pp`;
     
     dom.recentPlaysDiv.innerHTML = playsToDisplay.length
         ? playsToDisplay.map(d => {
@@ -1028,7 +1084,7 @@ function setupDragToSelect(config) {
     };
 
     container.addEventListener('mousedown', e => {
-        if (e.target.closest('a, button, .beatmap-cover-container')) return;
+        if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
         e.preventDefault();
         const card = e.target.closest('.glass-card');
         if (card) {
@@ -1096,7 +1152,7 @@ function setupDragToSelect(config) {
     window.addEventListener('mousemove', handleAutoScroll);
 
     container.addEventListener('click', e => {
-        if (e.target.closest('a, button, .beatmap-cover-container')) return;
+        if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
         if (!dragHappened) {
             const card = e.target.closest('.glass-card');
             if (card) {
@@ -1109,6 +1165,414 @@ function setupDragToSelect(config) {
             }
         }
     });
+}
+
+
+// --- PP 计算器逻辑 ---
+
+function createPpCalculatorControls() {
+    const createSlider = (id, label, min, max, step, value, isHidden = false) => {
+        const wrapper = document.createElement('div');
+        wrapper.id = `pp-calc-${id}-wrapper`;
+        wrapper.className = 'grid items-center'; // Compact layout
+        if (isHidden) wrapper.classList.add('hidden');
+        
+        const labelEl = document.createElement('label');
+        labelEl.htmlFor = `pp-calc-${id}-slider`;
+        labelEl.className = 'text-sm font-medium text-right opacity-80';
+        labelEl.textContent = label;
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.id = `pp-calc-${id}-slider`;
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
+        slider.value = value;
+        slider.className = 'pp-calc-input-slider';
+
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'flex items-center';
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.id = `pp-calc-${id}-input`;
+        input.min = min;
+        input.max = max;
+        input.step = step;
+        input.value = value;
+        input.className = 'pp-calc-input-number w-full p-2 bg-gray-700 rounded-l-md text-center border border-gray-600 border-r-0 focus:outline-none focus:ring-0';
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'flex flex-col';
+
+        const upButton = document.createElement('button');
+        upButton.type = 'button';
+        upButton.className = 'pp-calc-stepper-btn rounded-tr-md border-b-0';
+        upButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7" /></svg>`;
+
+        const downButton = document.createElement('button');
+        downButton.type = 'button';
+        downButton.className = 'pp-calc-stepper-btn rounded-br-md';
+        downButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>`;
+        
+        const performStep = (direction) => {
+            const currentValue = parseFloat(input.value) || 0;
+            const stepValue = parseFloat(input.step);
+            let newValue;
+
+            if (direction === 'up') {
+                newValue = Math.min(parseFloat(input.max), currentValue + stepValue);
+            } else {
+                newValue = Math.max(parseFloat(input.min), currentValue - stepValue);
+            }
+            
+            const decimals = step.toString().includes('.') ? step.toString().split('.')[1].length : 0;
+            const roundedNewValue = parseFloat(newValue.toFixed(decimals));
+            input.value = roundedNewValue;
+            slider.value = roundedNewValue;
+            
+            handlePpCalcScoreChange(id);
+        };
+
+        let stepperTimeout, stepperInterval;
+        const startStepping = (dir) => { performStep(dir); stepperTimeout = setTimeout(() => { stepperInterval = setInterval(() => performStep(dir), 100); }, 120); };
+        const stopStepping = () => { clearTimeout(stepperTimeout); clearInterval(stepperInterval); };
+
+        upButton.addEventListener('mousedown', () => startStepping('up'));
+        downButton.addEventListener('mousedown', () => startStepping('down'));
+        document.addEventListener('mouseup', stopStepping, true);
+
+        buttonContainer.appendChild(upButton);
+        buttonContainer.appendChild(downButton);
+        inputWrapper.appendChild(input);
+        inputWrapper.appendChild(buttonContainer);
+        wrapper.appendChild(labelEl);
+        wrapper.appendChild(slider);
+        wrapper.appendChild(inputWrapper);
+        
+        dom.ppCalculator.controls.scoreSimContainer.appendChild(wrapper);
+    };
+
+    createSlider('combo', '连击数', 0, 1, 1, 0);
+    createSlider('acc', '准确率', 0, 100, 0.01, 100);
+    createSlider('n300', '300s', 0, 1, 1, 0);
+    createSlider('n100', '100s', 0, 1, 1, 0);
+    createSlider('n50', '50s', 0, 1, 1, 0);
+    createSlider('miss', 'Misses', 0, 1, 1, 0);
+    createSlider('sliderTicks', 'Slider Ticks', 0, 1, 1, 0, true);
+    createSlider('sliderEnds', 'Slider Ends', 0, 1, 1, 0, true);
+}
+
+function initializePpCalculatorMods() {
+    const container = dom.ppCalculator.controls.modsContainer;
+    container.innerHTML = '';
+    const modLayout = ['None', 'NF', 'EZ', 'HD', 'HR', 'DT', 'HT', 'FL', 'SO'];
+
+    modLayout.forEach(modName => {
+        if (modName === 'None') {
+            const noneButton = document.createElement('button');
+            noneButton.id = 'pp-calc-mod-none';
+            noneButton.textContent = 'None';
+            noneButton.className = 'pp-calc-mod-label';
+            container.appendChild(noneButton);
+            return;
+        }
+
+        const value = MODS_ENUM[modName];
+        if (value === undefined) return;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `pp-calc-mod-${modName}`;
+        checkbox.className = 'pp-calc-mod-checkbox';
+        checkbox.dataset.value = value;
+        checkbox.dataset.mod = modName;
+
+        const label = document.createElement('label');
+        label.htmlFor = `pp-calc-mod-${modName}`;
+        label.className = 'pp-calc-mod-label';
+        label.textContent = modName === 'DT' ? 'DT/NC' : modName;
+        
+        container.appendChild(checkbox);
+        container.appendChild(label);
+    });
+}
+
+function handlePpCalcModConflict(clickedCheckbox) {
+    if (!clickedCheckbox.checked) return;
+    const modName = clickedCheckbox.dataset.mod;
+    const conflicts = { 'HR': 'EZ', 'EZ': 'HR', 'DT': 'HT', 'HT': 'DT' };
+    if (conflicts[modName]) {
+        const conflictCheckbox = document.getElementById(`pp-calc-mod-${conflicts[modName]}`);
+        if (conflictCheckbox) conflictCheckbox.checked = false;
+    }
+}
+
+function handlePpCalcScoreChange(sourceId) {
+    if (calculatorState.isInternalUpdate) return;
+    calculatorState.isInternalUpdate = true;
+
+    const { totalObjects, isAdvancedMode } = calculatorState;
+    const n100Input = document.getElementById('pp-calc-n100-input');
+    const n50Input = document.getElementById('pp-calc-n50-input');
+    const missInput = document.getElementById('pp-calc-miss-input');
+
+    if (isAdvancedMode) {
+        if (['n100', 'n50', 'miss'].includes(sourceId)) {
+            const n100 = parseInt(n100Input.value) || 0;
+            const n50 = parseInt(n50Input.value) || 0;
+            const miss = parseInt(missInput.value) || 0;
+            const n300 = totalObjects - n100 - n50 - miss;
+            updatePpCalcSlider('n300', Math.max(0, n300));
+            updatePpCalcAccFromHits();
+        }
+    } else {
+        if (sourceId === 'acc') {
+            const acc = parseFloat(document.getElementById('pp-calc-acc-input').value);
+            if (acc === 100) {
+                 updatePpCalcSlider('combo', calculatorState.currentDiffAttrs.maxCombo);
+                 updatePpCalcSlider('miss', 0);
+            }
+        }
+    }
+
+    calculatorState.isInternalUpdate = false;
+    updatePpPerformance();
+}
+
+function updatePpCalcAccFromHits() {
+    const n300 = parseInt(document.getElementById('pp-calc-n300-input').value) || 0;
+    const n100 = parseInt(document.getElementById('pp-calc-n100-input').value) || 0;
+    const n50 = parseInt(document.getElementById('pp-calc-n50-input').value) || 0;
+    const miss = parseInt(document.getElementById('pp-calc-miss-input').value) || 0;
+    const totalHits = n300 + n100 + n50 + miss;
+    if (calculatorState.totalObjects === 0 || totalHits === 0) return;
+    const acc = (n300 * 300 + n100 * 100 + n50 * 50) / (totalHits * 300) * 100;
+    if (!isNaN(acc)) {
+        updatePpCalcSlider('acc', acc.toFixed(2));
+    }
+}
+
+function updatePpCalcInputStates() {
+    const { isAdvancedMode } = calculatorState;
+    const isAcc100 = parseFloat(document.getElementById('pp-calc-acc-input').value) === 100;
+
+    document.getElementById('pp-calc-n300-wrapper').classList.toggle('hidden', !isAdvancedMode);
+    document.getElementById('pp-calc-n100-wrapper').classList.toggle('hidden', !isAdvancedMode);
+    document.getElementById('pp-calc-n50-wrapper').classList.toggle('hidden', !isAdvancedMode);
+
+    document.getElementById('pp-calc-acc-slider').disabled = isAdvancedMode;
+    document.getElementById('pp-calc-acc-input').disabled = isAdvancedMode;
+    
+    document.getElementById('pp-calc-combo-slider').disabled = !isAdvancedMode && isAcc100;
+    document.getElementById('pp-calc-combo-input').disabled = !isAdvancedMode && isAcc100;
+
+    document.getElementById('pp-calc-n300-slider').disabled = true;
+    document.getElementById('pp-calc-n300-input').disabled = true;
+    document.getElementById('pp-calc-n100-slider').disabled = !isAdvancedMode;
+    document.getElementById('pp-calc-n100-input').disabled = !isAdvancedMode;
+    document.getElementById('pp-calc-n50-slider').disabled = !isAdvancedMode;
+    document.getElementById('pp-calc-n50-input').disabled = !isAdvancedMode;
+}
+
+async function openPpCalculator(playData, beatmapData, beatmapsetData) {
+    const { modal, status, content, title } = dom.ppCalculator;
+    
+    // Set title and show modal
+    title.textContent = `${beatmapsetData.artist} - ${beatmapsetData.title}`;
+    modal.classList.remove('hidden');
+    content.classList.add('hidden');
+    status.innerHTML = `<div class="pp-calc-loader"></div><p class="ml-2">正在获取 .osu 文件...</p>`;
+
+    try {
+        let osuFileContent;
+        if (calculatorState.osuFileCache.has(beatmapData.id)) {
+            osuFileContent = calculatorState.osuFileCache.get(beatmapData.id);
+        } else {
+            const response = await fetch(`${CORS_PROXY_URL}https://osu.ppy.sh/osu/${beatmapData.id}`);
+            if (!response.ok) throw new Error(`获取谱面失败 (status: ${response.status})`);
+            osuFileContent = await response.text();
+            calculatorState.osuFileCache.set(beatmapData.id, osuFileContent);
+        }
+
+        status.innerHTML = `<div class="pp-calc-loader"></div><p class="ml-2">解析谱面中...</p>`;
+        
+        if (calculatorState.currentMap) calculatorState.currentMap.free();
+        calculatorState.currentMap = new rosu.Beatmap(osuFileContent);
+        calculatorState.currentBeatmapData = beatmapData; // Store original beatmap data
+        calculatorState.totalObjects = calculatorState.currentMap.nObjects;
+
+        // Pre-fill calculator with play data
+        prefillCalculator(playData);
+
+        await updatePpPerformance();
+        
+        content.classList.remove('hidden');
+        status.innerHTML = '';
+    } catch (error) {
+        console.error("Error opening PP calculator:", error);
+        status.innerHTML = `<p class="text-red-400">错误: ${error.message}</p>`;
+    }
+}
+
+function prefillCalculator(playData) {
+    calculatorState.isInternalUpdate = true;
+    
+    const { controls } = dom.ppCalculator;
+    
+    // Set advanced mode checkbox
+    controls.advancedModeCheckbox.checked = calculatorState.isAdvancedMode;
+
+    // Set mods
+    controls.modsContainer.querySelectorAll('.pp-calc-mod-checkbox').forEach(cb => cb.checked = false);
+    playData.mods.forEach(modAcronym => {
+        const cb = controls.modsContainer.querySelector(`#pp-calc-mod-${modAcronym.replace('NC', 'DT')}`);
+        if (cb) cb.checked = true;
+    });
+
+    // Set score values
+    updatePpCalcSlider('acc', (playData.accuracy * 100).toFixed(2));
+    updatePpCalcSlider('combo', playData.max_combo);
+    updatePpCalcSlider('miss', playData.statistics.count_miss);
+    
+    const { count_100, count_50, count_miss } = playData.statistics;
+    const n300 = calculatorState.totalObjects - count_100 - count_50 - count_miss;
+    
+    updatePpCalcSlider('n300', n300);
+    updatePpCalcSlider('n100', count_100);
+    updatePpCalcSlider('n50', count_50);
+    
+    // Lazer-specific values (assuming stable score for now, so 0)
+    controls.lazerCheckbox.checked = false; 
+    calculatorState.isLazerMode = false;
+    document.getElementById('pp-calc-sliderTicks-wrapper').classList.add('hidden');
+    document.getElementById('pp-calc-sliderEnds-wrapper').classList.add('hidden');
+    updatePpCalcSlider('sliderTicks', 0);
+    updatePpCalcSlider('sliderEnds', 0);
+
+    calculatorState.isInternalUpdate = false;
+    updatePpCalcInputStates();
+}
+
+function updatePpCalcSlider(id, value, max) {
+    const slider = document.getElementById(`pp-calc-${id}-slider`);
+    const input = document.getElementById(`pp-calc-${id}-input`);
+    if (max !== undefined) {
+        slider.max = max;
+        input.max = max;
+    }
+    slider.value = value;
+    input.value = value;
+}
+
+async function updatePpPerformance() {
+    if (!calculatorState.currentMap || calculatorState.isInternalUpdate) return;
+    calculatorState.isInternalUpdate = true;
+
+    let difficulty, perf, diffAttrs, perfAttrs, mapAttrs;
+    
+    try {
+        const { controls } = dom.ppCalculator;
+        const mods = Array.from(controls.modsContainer.querySelectorAll('input:checked'))
+            .reduce((acc, cb) => acc + parseInt(cb.dataset.value), 0);
+        
+        const lazer = controls.lazerCheckbox.checked;
+
+        difficulty = new rosu.Difficulty({ mods, lazer });
+        diffAttrs = difficulty.calculate(calculatorState.currentMap);
+
+        if (calculatorState.currentDiffAttrs) calculatorState.currentDiffAttrs.free();
+        calculatorState.currentDiffAttrs = diffAttrs;
+
+        const attrBuilder = new rosu.BeatmapAttributesBuilder({ map: calculatorState.currentMap, mods, lazer });
+        mapAttrs = attrBuilder.build();
+
+        const perfConfig = { mods, lazer };
+        
+        perfConfig.combo = parseInt(document.getElementById('pp-calc-combo-input').value);
+        perfConfig.misses = parseInt(document.getElementById('pp-calc-miss-input').value);
+        
+        if (calculatorState.isAdvancedMode) {
+            perfConfig.n100 = parseInt(document.getElementById('pp-calc-n100-input').value);
+            perfConfig.n50 = parseInt(document.getElementById('pp-calc-n50-input').value);
+            perfConfig.n300 = calculatorState.totalObjects - perfConfig.n100 - perfConfig.n50 - perfConfig.misses;
+        } else {
+            perfConfig.accuracy = parseFloat(document.getElementById('pp-calc-acc-input').value);
+            perfConfig.hitresultPriority = rosu.HitResultPriority.Fastest;
+        }
+        
+        if(lazer) {
+            perfConfig.largeTickHits = parseInt(document.getElementById('pp-calc-sliderTicks-input').value);
+            perfConfig.sliderEndHits = parseInt(document.getElementById('pp-calc-sliderEnds-input').value);
+        }
+
+        perf = new rosu.Performance(perfConfig);
+        perfAttrs = perf.calculate(diffAttrs);
+
+        updatePpCalcUIDisplay(diffAttrs, perfAttrs, mapAttrs);
+        
+        if (!calculatorState.isAdvancedMode && perfAttrs.state) {
+            updatePpCalcSlider('n300', perfAttrs.state.n300 ?? 0);
+            updatePpCalcSlider('n100', perfAttrs.state.n100 ?? 0);
+            updatePpCalcSlider('n50', perfAttrs.state.n50 ?? 0);
+        }
+        
+    } catch (error) {
+        console.error("Error during PP calculation:", error);
+        dom.ppCalculator.pp.display.textContent = "Error";
+    } finally {
+        if (difficulty) difficulty.free();
+        if (perf) perf.free();
+        if (mapAttrs) mapAttrs.free();
+        calculatorState.isInternalUpdate = false;
+    }
+}
+
+function applyAttributeColor(element, baseValue, moddedValue, higherIsHarder = true) {
+    element.textContent = moddedValue.toFixed(2);
+    element.classList.remove('stat-value', 'stat-increase', 'stat-decrease');
+
+    if (moddedValue > baseValue) {
+        element.classList.add(higherIsHarder ? 'stat-increase' : 'stat-decrease');
+    } else if (moddedValue < baseValue) {
+        element.classList.add(higherIsHarder ? 'stat-decrease' : 'stat-increase');
+    } else {
+        element.classList.add('stat-value');
+    }
+}
+
+function updatePpCalcUIDisplay(diffAttrs, perfAttrs, mapAttrs) {
+    const { info, pp } = dom.ppCalculator;
+    const baseMap = calculatorState.currentMap;
+    
+    info.stars.textContent = diffAttrs.stars.toFixed(2);
+    info.stars.className = 'stat-value'; 
+    info.maxCombo.textContent = diffAttrs.maxCombo;
+    info.maxCombo.className = 'stat-value'; 
+    info.nObjects.textContent = calculatorState.totalObjects;
+    info.nObjects.className = 'stat-value';
+    
+    // Apply conditional coloring
+    applyAttributeColor(info.ar, baseMap.ar, mapAttrs.ar, true);
+    applyAttributeColor(info.od, baseMap.od, mapAttrs.od, true);
+    applyAttributeColor(info.cs, baseMap.cs, mapAttrs.cs, true);
+    applyAttributeColor(info.hp, baseMap.hp, mapAttrs.hp, true);
+    
+    applyAttributeColor(info.bpm, baseMap.bpm, baseMap.bpm * mapAttrs.clockRate, true);
+
+    updatePpCalcSlider('combo', document.getElementById('pp-calc-combo-input').value, diffAttrs.maxCombo);
+    updatePpCalcSlider('miss', document.getElementById('pp-calc-miss-input').value, calculatorState.totalObjects);
+    updatePpCalcSlider('n100', document.getElementById('pp-calc-n100-input').value, calculatorState.totalObjects);
+    updatePpCalcSlider('n50', document.getElementById('pp-calc-n50-input').value, calculatorState.totalObjects);
+    updatePpCalcSlider('sliderTicks', document.getElementById('pp-calc-sliderTicks-input').value, diffAttrs.nLargeTicks ?? 0);
+    updatePpCalcSlider('sliderEnds', document.getElementById('pp-calc-sliderEnds-input').value, diffAttrs.nSliders ?? 0);
+
+    pp.display.textContent = perfAttrs.pp.toFixed(2);
+    pp.aim.textContent = perfAttrs.ppAim?.toFixed(2) ?? '0';
+    pp.speed.textContent = perfAttrs.ppSpeed?.toFixed(2) ?? '0';
+    pp.acc.textContent = perfAttrs.ppAccuracy?.toFixed(2) ?? '0';
+    pp.fl.textContent = perfAttrs.ppFlashlight?.toFixed(2) ?? '0';
 }
 
 
@@ -1259,14 +1723,68 @@ function setupEventListeners() {
 
 
     setupAudioPlayerListeners();
+
+    // PP Calculator Listeners
+    dom.ppCalculator.closeBtn.addEventListener('click', () => dom.ppCalculator.modal.classList.add('hidden'));
+    
+    document.body.addEventListener('click', e => {
+        const calcBtn = e.target.closest('.pp-calc-btn');
+        if (calcBtn) {
+            const playData = JSON.parse(calcBtn.dataset.play);
+            const beatmapData = JSON.parse(calcBtn.dataset.beatmap);
+            const beatmapsetData = JSON.parse(calcBtn.dataset.beatmapset);
+            openPpCalculator(playData, beatmapData, beatmapsetData);
+        }
+    });
+
+    const { controls } = dom.ppCalculator;
+    controls.lazerCheckbox.addEventListener('change', () => {
+        calculatorState.isLazerMode = controls.lazerCheckbox.checked;
+        document.getElementById('pp-calc-sliderTicks-wrapper').classList.toggle('hidden', !calculatorState.isLazerMode);
+        document.getElementById('pp-calc-sliderEnds-wrapper').classList.toggle('hidden', !calculatorState.isLazerMode);
+        updatePpPerformance();
+    });
+    controls.advancedModeCheckbox.addEventListener('change', () => {
+        calculatorState.isAdvancedMode = controls.advancedModeCheckbox.checked;
+        updatePpCalcInputStates();
+        updatePpPerformance();
+    });
+    controls.modsContainer.addEventListener('change', (e) => {
+        if (e.target.classList.contains('pp-calc-mod-checkbox')) {
+            handlePpCalcModConflict(e.target);
+            updatePpPerformance();
+        }
+    });
+    document.getElementById('pp-calc-mod-none').addEventListener('click', () => {
+        controls.modsContainer.querySelectorAll('.pp-calc-mod-checkbox').forEach(cb => cb.checked = false);
+        updatePpPerformance();
+    });
+    
+    ['combo', 'acc', 'n100', 'n50', 'miss', 'sliderTicks', 'sliderEnds'].forEach(id => {
+        const slider = document.getElementById(`pp-calc-${id}-slider`);
+        const input = document.getElementById(`pp-calc-${id}-input`);
+        slider.addEventListener('input', () => { input.value = slider.value; handlePpCalcScoreChange(id); });
+        input.addEventListener('change', () => { slider.value = input.value; handlePpCalcScoreChange(id); });
+    });
 }
 
 // --- 应用初始化 ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await init('./rosu_pp_js/rosu_pp_js_bg.wasm');
+        console.log("rosu-pp-js Wasm 模块已加载");
+    } catch (error) {
+        console.error("加载 rosu-pp-js Wasm 模块失败:", error);
+        displayError("错误: 无法加载 PP 计算模块。请刷新页面重试。");
+        return;
+    }
+    
     setupCredentials();
+    createPpCalculatorControls();
+    initializePpCalculatorMods();
     setupEventListeners();
     setupBackgroundAnimation();
-    // Setup drag-to-select for both sections
+    
     setupDragToSelect({ container: dom.topPlaysDiv, selectAllCheckbox: dom.selectAllCheckbox });
     setupDragToSelect({ container: dom.recentPlaysDiv, selectAllCheckbox: dom.recentSelectAllCheckbox });
 });
