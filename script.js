@@ -1173,7 +1173,7 @@ function createPpCalculatorControls() {
     const createSlider = (id, label, min, max, step, value, isHidden = false) => {
         const wrapper = document.createElement('div');
         wrapper.id = `pp-calc-${id}-wrapper`;
-        wrapper.className = 'grid items-center'; // Compact layout
+        wrapper.className = 'grid items-center';
         if (isHidden) wrapper.classList.add('hidden');
 
         const labelEl = document.createElement('label');
@@ -1241,6 +1241,19 @@ function createPpCalculatorControls() {
         upButton.addEventListener('mousedown', () => startStepping('up'));
         downButton.addEventListener('mousedown', () => startStepping('down'));
         document.addEventListener('mouseup', stopStepping, true);
+
+        // --- 开始修改 ---
+        wrapper.addEventListener('wheel', e => {
+            // 如果滑块是禁用的，则不执行任何操作
+            if (slider.disabled) {
+                return;
+            }
+
+            e.preventDefault();
+            const direction = e.deltaY < 0 ? 'up' : 'down';
+            performStep(direction);
+        });
+        // --- 代码结束 ---
 
         buttonContainer.appendChild(upButton);
         buttonContainer.appendChild(downButton);
