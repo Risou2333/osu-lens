@@ -1510,6 +1510,27 @@ async function updatePpPerformance() {
         perf = new rosu.Performance(perfConfig);
         perfAttrs = perf.calculate(diffAttrs);
 
+        // --- (if PFC) PP 计算逻辑 开始 ---
+        const isLazer = controls.lazerCheckbox.checked;
+        const pfcPerfConfig = { ...perfConfig };
+        pfcPerfConfig.misses = 0;
+        pfcPerfConfig.combo = diffAttrs.maxCombo;
+
+        if (isLazer) {
+            pfcPerfConfig.largeTickHits = diffAttrs.nLargeTicks ?? 0;
+            pfcPerfConfig.sliderEndHits = diffAttrs.nSliders ?? 0;
+        }
+
+        const pfcPerf = new rosu.Performance(pfcPerfConfig);
+        const pfcPerfAttrs = pfcPerf.calculate(diffAttrs);
+
+        const fcPpValueElement = document.getElementById('pp-calc-fc-pp-value');
+        fcPpValueElement.textContent = pfcPerfAttrs.pp.toFixed(2);
+
+        // 释放内存
+        pfcPerf.free();
+        // --- (if PFC) PP 计算逻辑 结束 ---
+
         updatePpCalcUIDisplay(diffAttrs, perfAttrs, mapAttrs);
         
         if (!calculatorState.isAdvancedMode && perfAttrs.state) {
