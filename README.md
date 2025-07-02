@@ -2,7 +2,7 @@
 
 一个查询、分析和可视化 osu! 玩家数据的 Web 工具。
 
-**[🚀 查看线上 DEMO](http://osulens.netlify.app)**
+**🚀[查看线上 DEMO](http://osulens.netlify.app)**
 
 ---
 
