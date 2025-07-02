@@ -298,19 +298,19 @@
     <!-- PP Calculator Modal -->
     <div id="pp-calculator-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1001] p-4">
         <div id="pp-calculator-card" class="card w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center p-4 border-b" style="border-color: var(--input-border-color);">
+            <div class="relative flex justify-center items-center p-4 border-b" style="border-color: var(--input-border-color);">
                 <h2 class="text-xl font-bold" style="color: var(--primary-color);">动态PP计算器</h2>
-                <button id="pp-calc-close-btn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors">
+                <button id="pp-calc-close-btn" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-gray-500/20 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
-            <div id="pp-calculator-body" class="p-4 sm:p-6 space-y-6 overflow-y-auto">
-                <div id="pp-calc-status" class="text-center text-gray-500 dark:text-gray-400 h-8 flex items-center justify-center"></div>
+            <div id="pp-calculator-body" class="p-4 sm:p-6 overflow-y-auto">
+                <div id="pp-calc-status" class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center"></div>
                 
                 <div id="pp-calc-content" class="hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="card p-4">
-                            <h3 class="text-lg font-semibold border-b pb-2 mb-3" style="border-color: var(--input-border-color); color: var(--analysis-subtitle-color);">谱面信息 (Mods后)</h3>
+                            <h3 class="text-lg font-semibold border-b pb-2 mb-3 text-center" style="border-color: var(--input-border-color); color: #ffffff;">谱面信息 (Mods后)</h3>
                             <div id="pp-calc-beatmap-info" class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                 <div><strong>星数:</strong> <span id="pp-calc-stars">N/A</span></div>
                                 <div><strong>BPM:</strong> <span id="pp-calc-bpm">N/A</span></div>
@@ -322,15 +322,24 @@
                                 <div><strong>HP:</strong> <span id="pp-calc-hp">N/A</span></div>
                             </div>
                         </div>
-                        <div class="card p-4 flex flex-col justify-center items-center">
-                             <h3 class="text-lg font-semibold mb-2" style="color: var(--analysis-subtitle-color);">Performance Points</h3>
-                             <div id="pp-calc-pp-display" class="text-5xl font-bold" style="color: var(--primary-color);">0.00</div>
-                             <div id="pp-calc-pp-breakdown" class="flex flex-wrap gap-x-4 gap-y-1 text-sm mt-2 opacity-80">
-                                <span>Aim: <strong id="pp-calc-pp-aim" class="stat-value">0</strong></span>
-                                <span>Speed: <strong id="pp-calc-pp-speed" class="stat-value">0</strong></span>
-                                <span>Acc: <strong id="pp-calc-pp-acc" class="stat-value">0</strong></span>
-                                <span>Flashlight: <strong id="pp-calc-pp-fl" class="stat-value">0</strong></span>
-                             </div>
+                        <div class="card p-4">
+                            <h3 class="text-lg font-semibold border-b pb-2 mb-3 text-center" style="border-color: var(--input-border-color); color: #ffffff;">Performance Points</h3>
+                            <div class="flex flex-col justify-center items-center">
+                                <div id="pp-calc-pp-display" class="text-5xl font-bold" style="color: #38bdf8;">0.00</div>
+                                <div id="pp-calc-fc-pp-display" class="text-sm -mt-1 font-normal" style="color: #e95f5a;">
+                                    (<span id="pp-calc-fc-pp-value"></span> if PFC)
+                                </div>                              
+                                <div id="pp-calc-pp-breakdown" class="flex flex-col items-center gap-y-1 text-sm mt-2">
+                                    <div class="flex gap-x-6">
+                                        <span><strong>Aim:</strong> <span id="pp-calc-pp-aim" class="stat-value">0</span></span>
+                                        <span><strong>Speed:</strong> <span id="pp-calc-pp-speed" class="stat-value">0</span></span>
+                                        <span><strong>Acc:</strong> <span id="pp-calc-pp-acc" class="stat-value">0</span></span>
+                                    </div>
+                                    <div class="flex gap-x-6">
+                                        <span><strong>Flashlight:</strong> <span id="pp-calc-pp-fl" class="stat-value">0</span></span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
