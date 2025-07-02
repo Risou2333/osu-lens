@@ -1393,7 +1393,7 @@ async function openPpCalculator(playData, beatmapData, beatmapsetData) {
     const { modal, status, content, title } = dom.ppCalculator;
     
     // Set title and show modal
-    title.textContent = `${beatmapsetData.artist} - ${beatmapsetData.title}`;
+    title.textContent = `${beatmapsetData.artist} - ${beatmapsetData.title} [${beatmapData.version}]`;
     modal.classList.remove('hidden');
     content.classList.add('hidden');
     status.innerHTML = `<div class="pp-calc-loader"></div><p class="ml-2">正在获取 .osu 文件...</p>`;
