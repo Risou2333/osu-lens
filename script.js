@@ -1167,7 +1167,6 @@ function setupDragToSelect(config) {
     });
 }
 
-
 // --- PP 计算器逻辑 ---
 
 function createPpCalculatorControls() {
@@ -1176,7 +1175,7 @@ function createPpCalculatorControls() {
         wrapper.id = `pp-calc-${id}-wrapper`;
         wrapper.className = 'grid items-center'; // Compact layout
         if (isHidden) wrapper.classList.add('hidden');
-        
+
         const labelEl = document.createElement('label');
         labelEl.htmlFor = `pp-calc-${id}-slider`;
         labelEl.className = 'text-sm font-medium text-right opacity-80';
@@ -1215,7 +1214,7 @@ function createPpCalculatorControls() {
         downButton.type = 'button';
         downButton.className = 'pp-calc-stepper-btn rounded-br-md';
         downButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>`;
-        
+
         const performStep = (direction) => {
             const currentValue = parseFloat(input.value) || 0;
             const stepValue = parseFloat(input.step);
@@ -1226,12 +1225,12 @@ function createPpCalculatorControls() {
             } else {
                 newValue = Math.max(parseFloat(input.min), currentValue - stepValue);
             }
-            
+
             const decimals = step.toString().includes('.') ? step.toString().split('.')[1].length : 0;
             const roundedNewValue = parseFloat(newValue.toFixed(decimals));
             input.value = roundedNewValue;
             slider.value = roundedNewValue;
-            
+
             handlePpCalcScoreChange(id);
         };
 
@@ -1250,16 +1249,17 @@ function createPpCalculatorControls() {
         wrapper.appendChild(labelEl);
         wrapper.appendChild(slider);
         wrapper.appendChild(inputWrapper);
-        
+
         dom.ppCalculator.controls.scoreSimContainer.appendChild(wrapper);
     };
 
+    // 按照从左到右，从上到下的顺序重新排列
     createSlider('combo', '连击数', 0, 1, 1, 0);
-    createSlider('acc', '准确率', 0, 100, 0.01, 100);
     createSlider('n300', '300s', 0, 1, 1, 0);
+    createSlider('acc', '准确率', 0, 100, 0.01, 100);
     createSlider('n100', '100s', 0, 1, 1, 0);
-    createSlider('n50', '50s', 0, 1, 1, 0);
     createSlider('miss', 'Misses', 0, 1, 1, 0);
+    createSlider('n50', '50s', 0, 1, 1, 0);
     createSlider('sliderTicks', 'Slider Ticks', 0, 1, 1, 0, true);
     createSlider('sliderEnds', 'Slider Ends', 0, 1, 1, 0, true);
 }
