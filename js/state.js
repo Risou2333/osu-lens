@@ -1,22 +1,15 @@
 // js/state.js
 
-/**
- * 管理应用的可变状态
- */
-
-// 认证和数据源状态
+// 应用状态管理
 export let accessToken = null;
 export let tokenExpiry = 0;
 export let downloadSource = 'nerinyan';
-
-// 玩家数据状态
 export let currentPlayer = null;
 export let recentPlaysLoaded = false;
 export let originalTopPlaysDetails = [];
 export let recentPlaysDetails = [];
 export let processedPlayDetailsForChart = [];
 
-// UI 和筛选状态
 export const appState = {
     sortCriteria: 'pp',
     sortOrder: 'desc',
@@ -27,15 +20,15 @@ export const appState = {
     recentPassOnly: false,
     recentBpOnly: false,
     searchHistory: [],
-    isFetchingRecentPlays: false, // 标志位：是否正在获取数据
-    allRecentPlaysLoaded: false,  // 标志位：是否所有记录都已加载完毕
-    recentPlaysOffset: 0,         // 记录当前已加载的偏移量
+    isFetchingRecentPlays: false,
+    allRecentPlaysLoaded: false,
+    recentPlaysOffset: 0,
+    beatmapSearchCursor: null,
+    isFetchingBeatmaps: false,
 };
 
-// 图表实例状态
 export const activeCharts = {};
 
-// PP 计算器状态
 export const calculatorState = {
     currentMap: null,
     currentBeatmapData: null,
@@ -47,7 +40,6 @@ export const calculatorState = {
     osuFileCache: new Map(),
 };
 
-// 提供方法来修改状态，这是一种良好的实践，可以跟踪状态变更
 export function setAccessToken(token, expiry) {
     accessToken = token;
     tokenExpiry = expiry;
@@ -88,4 +80,6 @@ export function resetPlayerData() {
     appState.isFetchingRecentPlays = false;
     appState.allRecentPlaysLoaded = false;
     appState.recentPlaysOffset = 0;
+    appState.beatmapSearchCursor = null;
+    appState.isFetchingBeatmaps = false;
 }

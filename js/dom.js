@@ -1,11 +1,10 @@
-// js/dom.js
-
-/**
- * 集中管理所有的 DOM 元素获取，避免在多个文件中重复查询
+/*
+ * js/dom.js
+ *
+ * 集中管理所有的 DOM 元素获取，避免在多个文件中重复查询。
  */
 
 export const dom = {
-    // 主应用元素
     clientIdInput: document.getElementById('clientId'),
     clientSecretInput: document.getElementById('clientSecret'),
     sourceToggleBtn: document.getElementById('sourceToggleBtn'),
@@ -43,7 +42,6 @@ export const dom = {
     changeKeyBtn: document.getElementById('changeKeyBtn'),
     userSearchArea: document.getElementById('userSearchArea'),
     saveKeysBtn: document.getElementById('saveKeysBtn'),
-    // 音频播放器元素
     player: {
         container: document.getElementById('audioPlayer'),
         audio: document.getElementById('audioElement'),
@@ -58,7 +56,12 @@ export const dom = {
         volumeSlider: document.getElementById('player-volume-slider'),
         closeBtn: document.getElementById('player-close-btn'),
     },
-    // 玩家信息元素
+    beatmapSearchPage: {
+        page: document.getElementById('beatmapSearchPage'),
+        queryInput: document.getElementById('beatmapQueryInput'),
+        searchBtn: document.getElementById('beatmapSearchBtn'),
+        resultsContainer: document.getElementById('beatmapSearchResultsContainer'),
+    },    
     playerInfo: {
         banner: document.getElementById('player-banner'),
         profileLink: document.getElementById('playerProfileLink'),
@@ -75,7 +78,6 @@ export const dom = {
         countryRank: document.getElementById('playerCountryRank'),
         rankedScore: document.getElementById('playerRankedScore'),
     },
-    // PP 计算器模态框元素
     ppCalculator: {
         modal: document.getElementById('pp-calculator-modal'),
         card: document.getElementById('pp-calculator-card'),
@@ -110,7 +112,6 @@ export const dom = {
     }
 };
 
-// 图表 Canvas Context
 export const chartCanvases = {
    pp: document.getElementById('ppScatterChart').getContext('2d'),
    mapperScatter: document.getElementById('mapperScatterChart').getContext('2d'),

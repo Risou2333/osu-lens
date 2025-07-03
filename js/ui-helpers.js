@@ -1,17 +1,11 @@
 // js/ui-helpers.js
 
-/**
- * 包含与主要内容渲染无关的 UI 辅助功能，如 Toast、动画、拖拽选择等
- */
-
+// UI 辅助功能，如 Toast、动画、拖拽选择等
 import { dom } from './dom.js';
 
 let toastTimeout;
 
-/**
- * 显示一个短暂的提示信息 (Toast)
- * @param {string} message - 要显示的信息
- */
+// 显示一个短暂的提示信息 (Toast)
 export function showToast(message) {
     clearTimeout(toastTimeout);
     dom.toast.textContent = message;
@@ -21,9 +15,7 @@ export function showToast(message) {
     }, 2500);
 }
 
-/**
- * 设置背景粒子动画
- */
+// 设置背景粒子动画
 export function setupBackgroundAnimation() {
     const canvas = document.getElementById('background-animation-canvas');
     if (!canvas) return;
@@ -44,21 +36,16 @@ export function setupBackgroundAnimation() {
     startAnimation();
 }
 
-/**
- * 设置拖拽选择功能
- * @param {object} config - 配置对象 { container, selectAllCheckbox }
- */
+// 设置拖拽选择功能
 export function setupDragToSelect(config) {
     const { container, selectAllCheckbox } = config;
     if (!container) return;
-
     let isDragging = false;
     let dragHappened = false;
     let startIndex = -1;
     let dragAction = 'select';
     let allCards = [];
     let scrollInterval = null;
-
     const updateSelectionPreview = (currentIndex) => {
         if (startIndex === -1) return;
         allCards.forEach(card => card.classList.remove('drag-over'));
@@ -68,7 +55,6 @@ export function setupDragToSelect(config) {
             if (allCards[i]) allCards[i].classList.add('drag-over');
         }
     };
-
     container.addEventListener('mousedown', e => {
         if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
         e.preventDefault();
@@ -82,7 +68,6 @@ export function setupDragToSelect(config) {
             updateSelectionPreview(startIndex);
         }
     });
-
     container.addEventListener('mouseover', e => {
         if (!isDragging) return;
         dragHappened = true;
@@ -92,7 +77,6 @@ export function setupDragToSelect(config) {
             updateSelectionPreview(currentIndex);
         }
     });
-
     const stopDragging = (e) => {
         if (!isDragging) return;
         allCards.forEach(card => card.classList.remove('drag-over'));
@@ -120,7 +104,6 @@ export function setupDragToSelect(config) {
             }
         }, 0);
     };
-
     const handleAutoScroll = (e) => {
         if (!isDragging) return;
         clearInterval(scrollInterval);
@@ -133,10 +116,8 @@ export function setupDragToSelect(config) {
             scrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 15);
         }
     };
-
     window.addEventListener('mouseup', stopDragging, true);
     window.addEventListener('mousemove', handleAutoScroll);
-
     container.addEventListener('click', e => {
         if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
         if (!dragHappened) {
@@ -153,12 +134,7 @@ export function setupDragToSelect(config) {
     });
 }
 
-/**
- * 设置加载状态的显示
- * @param {boolean} isLoading - 是否正在加载
- * @param {string} message - 加载时显示的消息
- * @param {boolean} isInitialLoad - 是否是初次加载（用于重置UI）
- */
+// 设置加载状态的显示
 export function setLoading(isLoading, message = "正在加载数据...", isInitialLoad = false) {
     dom.loadingDiv.querySelector('p').textContent = message;
     dom.loadingDiv.classList.toggle('hidden', !isLoading);
@@ -166,17 +142,12 @@ export function setLoading(isLoading, message = "正在加载数据...", isIniti
         dom.errorMessageDiv.classList.add('hidden');
         dom.playerDataContainer.classList.add('hidden');
         dom.navLinksContainer.classList.add('hidden');
-
-        if (isInitialLoad) {
-            // 在 main.js 中通过 resetPlayerData() 实现
-        }
+        dom.beatmapSearchPage.page.classList.add('hidden');
+        dom.beatmapSearchPage.resultsContainer.innerHTML = '';
     }
 }
 
-/**
- * 显示错误信息
- * @param {string} message - 错误信息
- */
+// 显示错误信息
 export function displayError(message) {
     dom.errorMessageDiv.textContent = message;
     dom.errorMessageDiv.classList.remove('hidden');

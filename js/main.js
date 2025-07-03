@@ -1,14 +1,9 @@
-// js/main.js
-
-/**
- * 应用主入口文件
- * 负责：
- * 1. 导入所有其他模块
- * 2. 初始化应用（Wasm, 事件监听等）
- * 3. 编排核心业务逻辑
+/*
+ * js/main.js
+ *
+ * 应用主入口文件。负责导入所有模块，初始化应用，并编排核心业务逻辑和事件监听。
  */
 
-// --- 模块导入 ---
 import init from '../rosu_pp_js/rosu_pp_js.js';
 import { dom } from './dom.js';
 import { 
@@ -16,26 +11,18 @@ import {
     setAccessToken, setDownloadSource, setCurrentPlayer, setRecentPlaysLoaded, 
     setOriginalTopPlays, setRecentPlays, setProcessedPlaysForChart, resetPlayerData
 } from './state.js';
-import { formatNumber } from './utils.js';
 import { DOWNLOAD_SOURCE_INFO } from './config.js';
-import { getAccessToken, fetchV2Api } from './api.js';
-import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML } from './ui.js';
+import { getAccessToken, fetchV2Api, searchBeatmapsets } from './api.js';
 import { setupDragToSelect, setupBackgroundAnimation, showToast, setLoading, displayError } from './ui-helpers.js';
 import { renderAllEmbeddedCharts } from './charts.js';
 import { setupAudioPlayerListeners } from './audio-player.js';
-import { createPpCalculatorControls, initializePpCalculatorMods, setupPpCalculatorListeners } from './pp-calculator.js';
+import { createPpCalculatorControls, initializePpCalculatorMods, setupPpCalculatorListeners, openPpCalculatorForBeatmap } from './pp-calculator.js';
+import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML, createBeatmapsetCardHTML } from './ui.js';
 
-// --- 核心业务逻辑 ---
-
-/**
- * 通过点击按钮加载更多最近的 plays
- */
 async function loadMoreRecentPlays() {
-    // 检查状态，防止重复加载
     if (appState.isFetchingRecentPlays || appState.allRecentPlaysLoaded || !currentPlayer) return;
 
     appState.isFetchingRecentPlays = true;
-    // 显示加载动画
     dom.recentPlaysLoader.innerHTML = `<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div>`;
     dom.recentPlaysLoader.classList.remove('hidden');
 
@@ -67,7 +54,6 @@ async function loadMoreRecentPlays() {
                 };
             }).filter(detail => detail.beatmapData && detail.beatmapsetData);
             
-            // 将新卡片追加到现有列表，而不是重新渲染整个列表
             const newCardsHTML = newPlayDetails.map(d => {
                  if (d.isBp) {
                     return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.bpDetails.originalIndex, true);
@@ -77,21 +63,17 @@ async function loadMoreRecentPlays() {
             }).join('');
             dom.recentPlaysDiv.insertAdjacentHTML('beforeend', newCardsHTML);
 
-            // 更新状态
             setRecentPlays([...recentPlaysDetails, ...newPlayDetails]);
             appState.recentPlaysOffset += playsPage.length;
 
-            // 检查是否已加载完所有数据
             if (playsPage.length < limit || appState.recentPlaysOffset >= 500) {
                 appState.allRecentPlaysLoaded = true;
                 const message = appState.recentPlaysOffset >= 500 ? '已达到 API 查询上限 (500条记录)。' : '没有更多成绩了。';
                 dom.recentPlaysLoader.innerHTML = `<p class="opacity-70">${message}</p>`;
             } else {
-                 // 恢复“加载更多”按钮
                  dom.recentPlaysLoader.innerHTML = `<button id="loadMoreBtn" class="btn-primary">加载更多</button>`;
             }
         } else {
-            // 首次加载就没有数据
             appState.allRecentPlaysLoaded = true;
             if (appState.recentPlaysOffset === 0) {
                 dom.recentPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">该玩家暂无最近游玩记录。</p>';
@@ -104,15 +86,12 @@ async function loadMoreRecentPlays() {
     } catch (error) {
         console.error("加载更多最近成绩时出错:", error);
         dom.recentPlaysLoader.innerHTML = `<p class="text-red-400">加载失败: ${error.message}</p>`;
-        appState.allRecentPlaysLoaded = true; // 出错时停止后续尝试
+        appState.allRecentPlaysLoaded = true;
     } finally {
         appState.isFetchingRecentPlays = false;
     }
 }
 
-/**
- * 渲染搜索历史记录
- */
 function renderSearchHistory() {
     dom.searchHistoryContainer.innerHTML = '';
     if (appState.searchHistory.length === 0) {
@@ -130,55 +109,34 @@ function renderSearchHistory() {
         </div>
     `).join('');
     dom.searchHistoryContainer.innerHTML = historyHTML;
-    dom.searchHistoryContainer.classList.remove('hidden'); // 确保有内容时显示
+    dom.searchHistoryContainer.classList.remove('hidden');
 }
 
-/**
- * 从搜索历史中移除一个玩家
- * @param {string} playerId - 要移除的玩家ID
- */
 function removeFromSearchHistory(playerId) {
-    // 根据 ID 过滤掉要删除的玩家
     appState.searchHistory = appState.searchHistory.filter(p => p.id.toString() !== playerId.toString());
-    
-    // 更新 localStorage 并重新渲染
     localStorage.setItem('osuSearchHistory', JSON.stringify(appState.searchHistory));
     renderSearchHistory();
-    
-    // 如果历史记录为空了，则隐藏容器
     if(appState.searchHistory.length === 0) {
         dom.searchHistoryContainer.classList.add('hidden');
     }
 }
 
-/**
- * 将玩家添加到搜索历史并保存到 localStorage
- * @param {object} player - 玩家对象
- */
 function addToSearchHistory(player) {
-    // 移除已存在的同名记录，以确保新记录在最前
     appState.searchHistory = appState.searchHistory.filter(p => p.id !== player.id);
-    
-    // 将新玩家添加到历史记录的开头
     appState.searchHistory.unshift({
         id: player.id,
         username: player.username,
         avatar_url: player.avatar_url
     });
 
-    // 限制历史记录最多10条
     if (appState.searchHistory.length > 10) {
         appState.searchHistory = appState.searchHistory.slice(0, 10);
     }
     
-    // 保存到 localStorage 并重新渲染
     localStorage.setItem('osuSearchHistory', JSON.stringify(appState.searchHistory));
     renderSearchHistory();
 }
 
-/**
- * 从 localStorage 加载搜索历史
- */
 function loadSearchHistory() {
     const history = localStorage.getItem('osuSearchHistory');
     if (history) {
@@ -187,9 +145,6 @@ function loadSearchHistory() {
     }
 }
 
-/**
- * 处理用户搜索
- */
 async function handleSearch() {
     const query = dom.usernameInput.value.trim();
     if (!query) { 
@@ -214,12 +169,11 @@ async function handleSearch() {
         }
         
         setCurrentPlayer(player);
-        addToSearchHistory(player); // 添加到历史记录
-        dom.searchHistoryContainer.classList.add('hidden'); // 搜索后隐藏历史列表
+        addToSearchHistory(player);
+        dom.searchHistoryContainer.classList.add('hidden');
         setRecentPlaysLoaded(false);
         dom.recentPlaysDiv.innerHTML = '';
         [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.add('hidden'));
-
         dom.refreshRecentPlaysBtn.classList.add('hidden');
 
         setLoading(true, `正在加载 ${player.username} 的 Top Plays...`);
@@ -282,10 +236,6 @@ async function handleSearch() {
     }
 }
 
-
-/**
- * 刷新最近的 plays
- */
 async function handleRecentPlaysRefresh() {
     if (!currentPlayer) return;
 
@@ -306,7 +256,7 @@ async function handleRecentPlaysRefresh() {
         let offset = 0;
         const limit = 50;
 
-        while (!foundExisting && offset < 500) { // Safety break after 10 pages
+        while (!foundExisting && offset < 500) {
             const recentData = await fetchV2Api(`users/${currentPlayer.id}/scores/recent?include_fails=1&limit=${limit}&offset=${offset}&mode=osu`);
             if (!recentData || recentData.length === 0) break; 
 
@@ -347,7 +297,7 @@ async function handleRecentPlaysRefresh() {
             }).filter(detail => detail.beatmapData && detail.beatmapsetData);
 
             const combinedPlays = [...newPlaysDetails, ...recentPlaysDetails];
-            combinedPlays.forEach((d, i) => d.recentIndex = i); // Re-index all
+            combinedPlays.forEach((d, i) => d.recentIndex = i);
             setRecentPlays(combinedPlays);
 
             renderFilteredRecentPlays();
@@ -375,7 +325,57 @@ async function handleRecentPlaysRefresh() {
     }
 }
 
-// --- 密钥管理 ---
+async function handleBeatmapSearch(isLoadMore = false) {
+    if (isLoadMore && (appState.isFetchingBeatmaps || !appState.beatmapSearchCursor)) {
+        return;
+    }
+
+    appState.isFetchingBeatmaps = true;
+    const bdom = dom.beatmapSearchPage;
+    const query = bdom.queryInput.value.trim();
+    const resultsContainer = bdom.resultsContainer;
+
+    if (isLoadMore) {
+        const loader = document.createElement('div');
+        loader.className = 'beatmap-loader text-center p-4';
+        loader.style.gridColumn = '1 / -1';
+        loader.innerHTML = `<div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div>`;
+        resultsContainer.appendChild(loader);
+    } else {
+        appState.beatmapSearchCursor = null;
+        resultsContainer.className = 'beatmap-grid-container';
+        resultsContainer.innerHTML = `<div class="text-center p-4" style="grid-column: 1 / -1;"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div><p class="mt-2">正在搜索...</p></div>`;
+    }
+
+    try {
+        const result = await searchBeatmapsets(query, 'last_updated_desc', appState.beatmapSearchCursor);
+        
+        const loader = resultsContainer.querySelector('.beatmap-loader');
+        if (loader) loader.remove();
+        
+        if (!isLoadMore) {
+            resultsContainer.innerHTML = '';
+        }
+
+        if (result && result.beatmapsets && result.beatmapsets.length > 0) {
+            const cardsHTML = result.beatmapsets.map(createBeatmapsetCardHTML).join('');
+            resultsContainer.insertAdjacentHTML('beforeend', cardsHTML);
+            
+            appState.beatmapSearchCursor = result.cursor_string;
+        } else {
+            appState.beatmapSearchCursor = null;
+            if (!isLoadMore) {
+                resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;">没有找到相关的谱面。</p>';
+            }
+        }
+    } catch (error) {
+        console.error("谱面搜索失败:", error);
+        resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">搜索失败: ${error.message}</p>`;
+    } finally {
+        appState.isFetchingBeatmaps = false;
+    }
+}
+
 function setupCredentials() {
     const savedId = localStorage.getItem('osuClientId');
     const savedSecret = localStorage.getItem('osuClientSecret');
@@ -389,36 +389,33 @@ function setupCredentials() {
     }
 }
 
-// --- 事件监听器设置 ---
 function setupEventListeners() {
     dom.usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
 
+    let historyHideTimeout;
+
     dom.usernameInput.addEventListener('focus', () => {
+        clearTimeout(historyHideTimeout);
         if (appState.searchHistory.length > 0) {
             dom.searchHistoryContainer.classList.remove('hidden');
         }
     });
 
     dom.usernameInput.addEventListener('blur', () => {
-        // 延迟隐藏，以便能成功触发历史项的点击事件
-        setTimeout(() => {
+        historyHideTimeout = setTimeout(() => {
             dom.searchHistoryContainer.classList.add('hidden');
         }, 150);
     });
 
-    // 对历史容器的点击监听
     dom.searchHistoryContainer.addEventListener('click', (e) => {
         const deleteButton = e.target.closest('.history-item-delete');
         const mainContent = e.target.closest('.history-item-main');
 
         if (deleteButton) {
-            // 如果点击的是删除按钮
             const playerId = deleteButton.dataset.id;
             removeFromSearchHistory(playerId);
-            // 阻止事件冒泡，防止触发 mainContent 的点击
             e.stopPropagation(); 
         } else if (mainContent) {
-            // 如果点击的是玩家信息区域
             dom.searchHistoryContainer.classList.add('hidden');
             const username = mainContent.dataset.username;
             dom.usernameInput.value = username;
@@ -482,21 +479,36 @@ function setupEventListeners() {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const pageId = link.dataset.page;
-            
-            if (pageId === 'recentPlaysSection' && !recentPlaysLoaded) {
-                setRecentPlaysLoaded(true); // 标记为已开始加载
-                dom.recentPlaysControls.classList.remove('hidden');
-                dom.recentPlaysLoader.innerHTML = `<button id="loadMoreBtn" class="btn-primary">加载更多</button>`;
-                dom.recentPlaysLoader.classList.remove('hidden');
-                dom.refreshRecentPlaysBtn.classList.remove('hidden');
-                loadMoreRecentPlays(); // 首次加载第一页数据
+
+            if (pageId === 'beatmapSearchPage') {
+                dom.playerDataContainer.classList.add('hidden');
+                showPage(pageId);
+                handleBeatmapSearch();
+                return;
             }
-            showPage(pageId);
+
+            if (currentPlayer) {
+                dom.playerDataContainer.classList.remove('hidden');
+                
+                if (pageId === 'recentPlaysSection' && !recentPlaysLoaded) {
+                    setRecentPlaysLoaded(true);
+                    dom.recentPlaysControls.classList.remove('hidden');
+                    dom.recentPlaysLoader.innerHTML = `<button id="loadMoreBtn" class="btn-primary">加载更多</button>`;
+                    dom.recentPlaysLoader.classList.remove('hidden');
+                    dom.refreshRecentPlaysBtn.classList.remove('hidden');
+                    loadMoreRecentPlays();
+                }
+                showPage(pageId);
+            } else {
+                showToast("请先搜索一位玩家");
+                dom.searchCard.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                dom.usernameInput.focus();
+            }
         });
     });
 
     dom.recentPlaysLoader.addEventListener('click', (e) => {
-        // 确保只有在点击按钮时才触发
         if (e.target && e.target.id === 'loadMoreBtn') {
             loadMoreRecentPlays();
         }
@@ -561,7 +573,6 @@ function setupEventListeners() {
         ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
     });
 
-    // Recent Plays Controls
     dom.recentPassOnlyCheckbox.addEventListener('change', (e) => {
         appState.recentPassOnly = e.target.checked;
         renderFilteredRecentPlays();
@@ -590,9 +601,71 @@ function setupEventListeners() {
 
     setupAudioPlayerListeners();
     setupPpCalculatorListeners();
+
+    dom.beatmapSearchPage.searchBtn.addEventListener('click', handleBeatmapSearch);
+    dom.beatmapSearchPage.queryInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleBeatmapSearch();
+        }
+    });
+
+    window.addEventListener('scroll', () => {
+        if (appState.activePage !== 'beatmapSearchPage' || appState.isFetchingBeatmaps) {
+            return;
+        }
+
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        
+        if (scrollTop + clientHeight >= scrollHeight - 300) {
+            handleBeatmapSearch(true);
+        }
+    });
+
+    document.body.addEventListener('wheel', e => {
+        const bar = e.target.closest('.beatmap-card__difficulty-bar');
+        if (!bar) return;
+
+        e.preventDefault();
+
+        const indicators = Array.from(bar.querySelectorAll('.difficulty-indicator'));
+        if (indicators.length <= 1) return;
+
+        const currentIndex = indicators.findIndex(ind => ind.classList.contains('is-selected'));
+        indicators[currentIndex].classList.remove('is-selected');
+
+        let nextIndex;
+        if (e.deltaY < 0) {
+            nextIndex = (currentIndex - 1 + indicators.length) % indicators.length;
+        } else {
+            nextIndex = (currentIndex + 1) % indicators.length;
+        }
+
+        indicators[nextIndex].classList.add('is-selected');
+
+    }, { passive: false });
+
+    document.body.addEventListener('click', e => {
+        const calcTrigger = e.target.closest('.card-pp-calc-trigger');
+        if (!calcTrigger) return;
+
+        const actionsContainer = calcTrigger.closest('.beatmap-card__actions');
+        const card = actionsContainer.closest('.beatmap-card');
+        const selectedIndicator = card.querySelector('.difficulty-indicator.is-selected');
+
+        if (actionsContainer && selectedIndicator) {
+            try {
+                const beatmapsetData = JSON.parse(actionsContainer.dataset.beatmapset);
+                const beatmapData = JSON.parse(selectedIndicator.dataset.beatmap);
+                
+                openPpCalculatorForBeatmap(beatmapData, beatmapsetData);
+
+            } catch (error) {
+                console.error("打开PP计算器失败:", error);
+            }
+        }
+    });
 }
 
-// --- 应用初始化 ---
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await init('./rosu_pp_js/rosu_pp_js_bg.wasm');

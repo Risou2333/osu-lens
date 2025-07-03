@@ -1,23 +1,19 @@
-// js/audio-player.js
-
-/**
- * 包含音乐播放器的所有逻辑
+/*
+ * js/audio-player.js
+ *
+ * 包含音乐播放器的所有逻辑，用于播放谱面预览音频。
  */
 
 import { dom } from './dom.js';
 import { formatDuration } from './utils.js';
 
-/**
- * 播放指定 beatmapsetID 的预览音频
- * @param {string} beatmapsetId - 谱面集 ID
- * @param {string} songTitle - 歌曲标题
- */
-function playAudio(beatmapsetId, songTitle) {
+function playAudio(beatmapsetId, title, artist) {
     const p = dom.player;
     const url = `https://b.ppy.sh/preview/${beatmapsetId}.mp3`;
     if (p.audio.src !== url) p.audio.src = url;
-    p.infoText.textContent = songTitle;
-    p.info.title = songTitle;
+    
+    p.infoText.innerHTML = `<strong>${title}</strong> - ${artist}`;
+    p.info.title = `${title} - ${artist}`;
     
     setTimeout(() => {
         const isOverflow = p.infoText.scrollWidth > p.info.clientWidth;
@@ -62,15 +58,12 @@ function closePlayer() {
     updatePlayPauseIcon(false);
 }
 
-/**
- * 设置音频播放器的所有事件监听器
- */
 export function setupAudioPlayerListeners() {
     const p = dom.player;
     document.body.addEventListener('click', e => {
-        const cover = e.target.closest('.beatmap-cover-container');
-        if (cover?.dataset.beatmapsetId) {
-            playAudio(cover.dataset.beatmapsetId, cover.dataset.songTitle);
+        const audioTrigger = e.target.closest('.beatmap-cover-container, .beatmap-listen-btn');
+        if (audioTrigger?.dataset.beatmapsetId && audioTrigger.dataset.title && audioTrigger.dataset.artist) {
+            playAudio(audioTrigger.dataset.beatmapsetId, audioTrigger.dataset.title, audioTrigger.dataset.artist);
         }
     });
 

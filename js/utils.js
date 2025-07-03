@@ -1,13 +1,7 @@
 // js/utils.js
 
-/**
- * 存放通用的、无副作用的辅助函数
- */
-
-// 格式化数字，例如添加千位分隔符
+// 通用辅助函数
 export const formatNumber = (num, options = {}) => (Number(num) || 0).toLocaleString('en-US', options);
-
-// 格式化秒数为 "XdYhZm" 格式
 export const formatPlaytime = (s) => {
     if (!s) return 'N/A';
     const days = Math.floor(s / 86400);
@@ -15,17 +9,9 @@ export const formatPlaytime = (s) => {
     const minutes = Math.floor((s % 3600) / 60);
     return `${days}d${hours}h${minutes}m`;
 };
-
-// 格式化秒数为 "MM:SS" 格式
 export const formatDuration = (s) => isNaN(s) || s === null ? '00:00' : `${String(Math.floor(s/60)).padStart(2, '0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-
-// 计算数组平均值
 export const calculateAverage = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-
-// 计算数组方差
 export const calculateVariance = (arr, mean) => arr.length ? arr.reduce((a, v) => a + (v - mean)**2, 0) / arr.length : 0;
-
-// 根据 PP 值返回一个表情符号
 export const getPpIcon = (pp) => {
     if (pp === 0) return '🛌';
     if (pp > 0 && pp <= 1) return '🧑‍🦽';
@@ -35,5 +21,16 @@ export const getPpIcon = (pp) => {
     if (pp > 40 && pp <= 60) return '🚅';
     if (pp > 60 && pp <= 100) return '🛫';
     if (pp > 100) return '🚀';
-    return '➖'; // Default for negative or other cases
+    return '➖';
 };
+
+// 根据谱面难度星级返回对应的颜色
+export function getDifficultyColor(stars) {
+    const domain = [0.1, 1.25, 2, 2.5, 3.3, 4.2, 4.9, 5.8, 6.7, 7.7, 9];
+    const range = ['#4290FB', '#4FC0FF', '#4FFFD5', '#7CFF4F', '#F6F05C', '#FF8068', '#FF4E6F', '#C645B8', '#6563DE', '#18158E', '#000000'];
+    if (stars < domain[0]) return range[0];
+    for (let i = 1; i < domain.length; i++) {
+        if (stars < domain[i]) return range[i - 1];
+    }
+    return range[range.length - 1];
+}

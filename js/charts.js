@@ -1,7 +1,7 @@
-// js/charts.js
-
-/**
- * 包含所有 Chart.js 相关的图表渲染逻辑
+/*
+ * js/charts.js
+ *
+ * 包含所有 Chart.js 相关的图表渲染逻辑，用于可视化玩家数据。
  */
 
 import { chartCanvases, dom } from './dom.js';
@@ -9,10 +9,6 @@ import { activeCharts, appState } from './state.js';
 import { formatNumber, calculateAverage, calculateVariance } from './utils.js';
 import { renderFilteredAndSortedTopPlays, showPage } from './ui.js';
 
-/**
- * 获取图表颜色配置
- * @returns {object} 颜色配置对象
- */
 function getChartColors() {
     const palette = [
         'rgba(255, 105, 180, 0.8)', 'rgba(78, 186, 255, 0.8)', 'rgba(255, 206, 86, 0.8)', 
@@ -20,26 +16,14 @@ function getChartColors() {
         'rgba(255, 138, 101, 0.8)'
     ];
     return {
-        gridColor: 'rgba(224, 224, 224, 0.2)',
-        tickColor: '#e0e0e0',
-        titleColor: '#ff85c1',
-        legendLabelColor: '#e0e0e0',
-        tooltipBgColor: '#1a1a2e',
-        tooltipBorderColor: '#ff69b4',
-        fcColor: 'rgba(34, 197, 94, 0.7)',
-        missColor: 'rgba(239, 68, 68, 0.7)',
-        pieChartColors: palette,
-        mapperColors: palette,
-        primaryColor: 'rgba(255, 105, 180, 0.7)',
-        otherMapperColor: 'rgba(156, 163, 175, 0.7)'
+        gridColor: 'rgba(224, 224, 224, 0.2)', tickColor: '#e0e0e0', titleColor: '#ff85c1',
+        legendLabelColor: '#e0e0e0', tooltipBgColor: '#1a1a2e', tooltipBorderColor: '#ff69b4',
+        fcColor: 'rgba(34, 197, 94, 0.7)', missColor: 'rgba(239, 68, 68, 0.7)',
+        pieChartColors: palette, mapperColors: palette,
+        primaryColor: 'rgba(255, 105, 180, 0.7)', otherMapperColor: 'rgba(156, 163, 175, 0.7)'
     };
 }
 
-/**
- * 创建饼图
- * @param {string} chartId - 图表 ID
- * @param {object} data - 图表数据 { labels, values, ppValues }
- */
 function createPieChart(chartId, data) {
     if (activeCharts[chartId]) activeCharts[chartId].destroy();
     const colors = getChartColors();
@@ -87,13 +71,6 @@ function createPieChart(chartId, data) {
     });
 }
 
-/**
- * 创建散点图
- * @param {string} chartId - 图表 ID
- * @param {string} title - 图表标题
- * @param {Array<object>} playDetails - play 详细数据
- * @param {object} config - 图表配置
- */
 function createScatterPlot(chartId, title, playDetails, config) {
     if (activeCharts[chartId]) activeCharts[chartId].destroy();
     const colors = getChartColors();
@@ -185,12 +162,6 @@ function createScatterPlot(chartId, title, playDetails, config) {
     });
 }
 
-/**
- * 为饼图对数据进行分组
- * @param {Array<object>} details - play 详细数据
- * @param {function} grouperFn - 分组函数
- * @returns {object} 分组后的数据 { labels, values, ppValues }
- */
 function groupDataForPie(details, grouperFn, sorterFn) {
     const stats = details.reduce((acc, detail) => {
         const playMods = detail.playData.mods;
@@ -204,11 +175,9 @@ function groupDataForPie(details, grouperFn, sorterFn) {
 
     let sorted = Object.entries(stats);
 
-    // 如果传入了自定义排序函数，则使用它
     if (sorterFn) {
         sorted.sort(sorterFn);
     } else {
-        // 否则，默认按数量降序排序
         sorted.sort(([,a], [,b]) => b.count - a.count);
     }
 
@@ -219,10 +188,6 @@ function groupDataForPie(details, grouperFn, sorterFn) {
     };
 }
 
-/**
- * 渲染所有分析图表
- * @param {Array<object>} playDetails - play 详细数据
- */
 export function renderAllEmbeddedCharts(playDetails) { 
     if (!playDetails?.length) return;
     
@@ -240,7 +205,6 @@ export function renderAllEmbeddedCharts(playDetails) {
         yAxisConfig: { beginAtZero: false }, colorConfig: { type: 'mapper' }, showLegend: true
     });
 
-    // 定义 Rank 的顺序 (X/XH -> S/SH -> A -> B -> C -> D -> F)
     const rankOrder = ['X', 'XH', 'S', 'SH', 'A', 'B', 'C', 'D', 'F'];
     const rankSorter = (a, b) => {
         const indexA = rankOrder.indexOf(a[0]);
@@ -248,40 +212,32 @@ export function renderAllEmbeddedCharts(playDetails) {
         return indexA - indexB;
     };
 
-    // 使用新的排序函数创建 Rank 饼图
     createPieChart('rankPie', groupDataForPie(playDetails, d => d.playData.rank.toUpperCase(), rankSorter));
-    // 为 Mods 分布图表的调用也进行相应修改（虽然它不需要排序，但为了函数签名统一）
     createPieChart('modsPie', groupDataForPie(playDetails, (d, sortedMods) => sortedMods || 'NM'));
     
-    // --- 时长排序 ---
     const lenRanges = [ [0,60,'0-1:00'], [61,120,'1-2:00'], [121,180,'2-3:00'], [181,240,'3-4:00'], [241,300,'4-5:00'], [301,Infinity,'5:00+'] ];
-    const lenOrder = lenRanges.map(r => r[2]); // 从配置中提取顺序
+    const lenOrder = lenRanges.map(r => r[2]);
     const lenSorter = (a, b) => lenOrder.indexOf(a[0]) - lenOrder.indexOf(b[0]);
     
     createPieChart('lengthPie', groupDataForPie(playDetails, d => {
         const len = parseInt(d.beatmapData.total_length);
         return lenRanges.find(r => len >= r[0] && len <= r[1])[2];
-    }, lenSorter)); // 传入时长排序器
+    }, lenSorter));
     
-    // --- BPM 排序与统计 (考虑 DT/HT/NC) ---
     const bpmRanges = [ [0,120,'<120'], [120,150,'120-150'], [150.01,180,'151-180'], [180.01,210,'181-210'], [210.01,240,'211-240'], [240.01,Infinity,'>240'] ];
-    const bpmOrder = bpmRanges.map(r => r[2]); // 从配置中提取顺序
+    const bpmOrder = bpmRanges.map(r => r[2]);
     const bpmSorter = (a, b) => bpmOrder.indexOf(a[0]) - bpmOrder.indexOf(b[0]);
     
     createPieChart('bpmPie', groupDataForPie(playDetails, d => {
-        // 1. 获取基础 BPM
         let bpm = parseFloat(d.beatmapData.bpm);
         const mods = d.playData.mods;
 
-        // 2. 根据 Mods 调整 BPM
         if (mods.includes('DT') || mods.includes('NC')) {
             bpm *= 1.5;
         } else if (mods.includes('HT')) {
             bpm *= 0.75;
         }
 
-        // 3. 根据调整后的 BPM 进行分类
         return bpmRanges.find(r => bpm >= r[0] && bpm <= r[1])[2];
     }, bpmSorter));
-
 }

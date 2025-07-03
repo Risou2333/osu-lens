@@ -1,18 +1,12 @@
 // js/ui.js
 
-/**
- * 包含所有核心的 UI 渲染和更新函数
- */
-
+// 核心 UI 渲染和更新函数
 import { dom } from './dom.js';
 import { appState, downloadSource, originalTopPlaysDetails, recentPlaysDetails } from './state.js';
-import { formatNumber, formatPlaytime, formatDuration } from './utils.js';
+import { formatNumber, formatPlaytime, formatDuration, getDifficultyColor } from './utils.js';
 import { DOWNLOAD_SOURCE_INFO } from './config.js';
 
-/**
- * 渲染玩家信息
- * @param {object} player - 玩家数据对象
- */
+// 渲染玩家信息
 export function renderPlayerInfo(player) {
     const p = dom.playerInfo;
     const stats = player.statistics;
@@ -22,7 +16,6 @@ export function renderPlayerInfo(player) {
     p.name.textContent = player.username;
     p.flag.src = `https://osu.ppy.sh/images/flags/${player.country_code}.png`;
     p.joinDate.textContent = `加入日期: ${new Date(player.join_date).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}`;
-    
     p.level.textContent = `${stats.level.current} (${stats.level.progress}%)`;
     p.pp.textContent = `${formatNumber(stats.pp, {maximumFractionDigits: 0})} pp`;
     p.accuracy.textContent = `${(stats.hit_accuracy || 0).toFixed(2)}%`;
@@ -33,57 +26,31 @@ export function renderPlayerInfo(player) {
     p.rankedScore.textContent = formatNumber(stats.ranked_score);
 }
 
-/**
- * 创建单个 play 记录的 HTML 卡片
- * @param {object} play - play 数据
- * @param {object} beatmap - beatmap 数据
- * @param {object} beatmapset - beatmapset 数据
- * @param {string} type - 'top' 或 'recent'
- * @param {number} index - 索引
- * @param {boolean} isBpInRecent - 是否是在最近列表中显示 BP
- * @returns {string} HTML 字符串
- */
+// 创建单个 play 记录的 HTML 卡片
 export function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpInRecent = false) {
     if (!play || !beatmap || !beatmapset) return '';
     const rank = play.rank.toUpperCase();
     const songTitle = `${beatmapset.artist} - ${beatmapset.title}`;
     const isFc = play.perfect && play.statistics.count_miss === 0;
-
     const ppValue = parseFloat(play.pp) || 0;
     const isTopPlay = type === 'top' || isBpInRecent;
     const weightedPp = isTopPlay ? (ppValue * (0.95 ** index)) : 0;
     const extraClasses = isBpInRecent ? 'bp-highlight' : '';
-    
     const playDate = new Date(play.created_at);
-    const dateString = playDate.toLocaleDateString('sv-SE'); // 格式: YYYY-MM-DD
-    const timeString = playDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); // 格式: HH:mm
+    const dateString = playDate.toLocaleDateString('sv-SE');
+    const timeString = playDate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
     const fullDateTimeString = `${dateString} ${timeString}`;
-    
     const ppAndDateHTML = isTopPlay
-        ? `<div class="text-center">
-                <span class="text-xs opacity-60">${fullDateTimeString}</span>
-                <div class="mt-1">
-                    <p class="text-xl sm:text-2xl pp-display leading-tight">${ppValue.toFixed(0)}</p>
-                    <p class="text-xs opacity-80 leading-tight">(${(weightedPp).toFixed(1)})</p>
-                    <p class="pp-label leading-tight">PP</p>
-                </div>
-           </div>`
-        : `<div class="text-center">
-                <span class="text-xs opacity-60">${fullDateTimeString}</span>
-                <p class="text-xl sm:text-2xl pp-display mt-1">${play.pp ? play.pp.toFixed(0) : '?'}</p>
-                <p class="pp-label">PP</p>
-           </div>`;
-
+        ? `<div class="text-center"><span class="text-xs opacity-60">${fullDateTimeString}</span><div class="mt-1"><p class="text-xl sm:text-2xl pp-display leading-tight">${ppValue.toFixed(0)}</p><p class="text-xs opacity-80 leading-tight">(${(weightedPp).toFixed(1)})</p><p class="pp-label leading-tight">PP</p></div></div>`
+        : `<div class="text-center"><span class="text-xs opacity-60">${fullDateTimeString}</span><p class="text-xl sm:text-2xl pp-display mt-1">${play.pp ? play.pp.toFixed(0) : '?'}</p><p class="pp-label">PP</p></div>`;
     const downloadUrl = `${DOWNLOAD_SOURCE_INFO[downloadSource].url}${beatmap.beatmapset_id || beatmapset.id}`;
     const cardId = isBpInRecent ? `recent-bp-play-${index}` : `${type}-play-${index}`;
-    
     const playJson = JSON.stringify(play).replace(/'/g, "&apos;");
     const beatmapJson = JSON.stringify(beatmap).replace(/'/g, "&apos;");
     const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
-    
     return `
         <div id="${cardId}" class="glass-card p-2 flex items-stretch space-x-3 ${extraClasses}" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
-            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-song-title="${songTitle}">
+            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-title="${beatmapset.title.replace(/"/g, '&quot;')}" data-artist="${beatmapset.artist.replace(/"/g, '&quot;')}">
                 <img src="${beatmapset.covers.cover}" alt="谱面封面" class="beatmap-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x70/2a2a4e/e0e0e0?text=无封面';">
                 ${isTopPlay ? `<div class="bp-indicator">BP ${index + 1}</div>` : ''}
             </div>
@@ -119,38 +86,22 @@ export function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpI
     `;
 }
 
-/**
- * 渲染经过筛选的最近 plays
- */
+// 渲染经过筛选的最近 plays
 export function renderFilteredRecentPlays() {
     if (!recentPlaysDetails?.length) return;
-
     let playsToDisplay = [...recentPlaysDetails];
-
-    if (appState.recentPassOnly) {
-        playsToDisplay = playsToDisplay.filter(d => d.playData.rank !== 'F');
-    }
-    if (appState.recentBpOnly) {
-        playsToDisplay = playsToDisplay.filter(d => d.isBp);
-    }
-    
+    if (appState.recentPassOnly) playsToDisplay = playsToDisplay.filter(d => d.playData.rank !== 'F');
+    if (appState.recentBpOnly) playsToDisplay = playsToDisplay.filter(d => d.isBp);
     dom.recentPlaysDiv.innerHTML = playsToDisplay.length
         ? playsToDisplay.map(d => {
-            if (d.isBp) {
-                return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.bpDetails.originalIndex, true);
-            } else {
-                return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'recent', d.recentIndex);
-            }
+            if (d.isBp) return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.bpDetails.originalIndex, true);
+            else return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'recent', d.recentIndex);
         }).join('')
         : '<p class="opacity-70 text-center p-4">没有符合筛选条件的最近游玩记录。</p>';
-    
     dom.recentSelectAllCheckbox.checked = false;
 }
 
-/**
- * 切换和显示指定页面
- * @param {string} pageId - 要显示的页面元素的 ID
- */
+// 切换和显示指定页面
 export function showPage(pageId) {
     appState.activePage = pageId;
     document.querySelectorAll('.page-content').forEach(page => {
@@ -159,26 +110,20 @@ export function showPage(pageId) {
     document.querySelectorAll('#navLinksContainer .nav-link').forEach(link => {
         link.classList.toggle('active', link.dataset.page === pageId);
     });
+    dom.searchCard.classList.add('hidden');
 }
 
-/**
- * 渲染经过筛选和排序的 Top Plays
- */
+// 渲染经过筛选和排序的 Top Plays
 export function renderFilteredAndSortedTopPlays() {
     if (!originalTopPlaysDetails?.length) return;
-
     let playsToDisplay = [...originalTopPlaysDetails];
-    
     if (appState.activeModFilters.length) {
         playsToDisplay = playsToDisplay.filter(detail => {
             const playMods = detail.playData.mods.length ? detail.playData.mods : ['NM'];
             const filterMods = appState.activeModFilters;
-            
             if (filterMods.includes('NM') && playMods.includes('NM')) return true;
             if (filterMods.includes('NM') && !playMods.includes('NM')) return false;
-
             const normalizedPlayMods = playMods.map(m => m === 'NC' ? 'DT' : m);
-
             if (appState.modMatchMode === 'exact') {
                  const normalizedFilterMods = filterMods.map(m => m === 'NC' ? 'DT' : m).sort();
                  return JSON.stringify(normalizedPlayMods.sort()) === JSON.stringify(normalizedFilterMods);
@@ -189,17 +134,14 @@ export function renderFilteredAndSortedTopPlays() {
             );
         });
     }
-
     if (appState.fcFilterStatus !== 'all') {
         playsToDisplay = playsToDisplay.filter(d => {
             const isFc = d.playData.perfect && d.playData.statistics.count_miss === 0;
             return appState.fcFilterStatus === 'fc' ? isFc : !isFc;
         });
     }
-    
     const totalFilteredWeightedPp = playsToDisplay.reduce((sum, d) => sum + (parseFloat(d.playData.pp) || 0) * (0.95 ** d.originalIndex), 0);
     dom.filteredPpDisplay.querySelector('span').textContent = formatNumber(totalFilteredWeightedPp, {maximumFractionDigits: 0});
-
     const sortFns = {
         accuracy: (a, b) => (a.playData.accuracy || 0) - (b.playData.accuracy || 0),
         difficulty: (a, b) => (a.beatmapData.difficulty_rating || 0) - (b.beatmapData.difficulty_rating || 0),
@@ -211,16 +153,13 @@ export function renderFilteredAndSortedTopPlays() {
         const order = appState.sortOrder === 'asc' ? 1 : -1;
         return (sortFns[appState.sortCriteria] || sortFns.pp)(a, b) * order;
     });
-
     dom.selectAllCheckbox.checked = false;
-    dom.topPlaysDiv.innerHTML = playsToDisplay.length 
+    dom.topPlaysDiv.innerHTML = playsToDisplay.length
         ? playsToDisplay.map(d => createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.originalIndex)).join('')
         : '<p class="opacity-70 text-center p-4">没有符合筛选条件的 Top Plays。</p>';
 }
 
-/**
- * 更新排序表头的 UI（箭头和高亮）
- */
+// 更新排序表头的 UI（箭头和高亮）
 export function updateSortHeadersUI() {
     document.querySelectorAll('.sort-header[data-sort]').forEach(header => {
         const arrowSpan = header.querySelector('.sort-arrow');
@@ -234,40 +173,104 @@ export function updateSortHeadersUI() {
     });
 }
 
-/**
- * 更新所有下载链接的下载源
- */
+// 更新所有下载链接的下载源
 export function updateDownloadLinks() {
     const newBaseUrl = DOWNLOAD_SOURCE_INFO[downloadSource].url;
     document.querySelectorAll('.beatmap-download-link').forEach(link => {
         const beatmapsetId = link.dataset.beatmapsetId;
-        if (beatmapsetId) {
-            link.href = `${newBaseUrl}${beatmapsetId}`;
-        }
+        if (beatmapsetId) link.href = `${newBaseUrl}${beatmapsetId}`;
     });
 }
 
-/**
- * 显示首次设置 API 密钥的 UI
- * @param {boolean} isFirstTime - 是否是首次设置
- */
+// 显示首次设置 API 密钥的 UI
 export function showKeySetupUI(isFirstTime) {
     dom.searchCard.classList.remove('hidden');
     dom.credentialsContainer.classList.remove('hidden');
     dom.keyManagementContainer.classList.add('hidden');
     dom.userSearchArea.classList.add('hidden');
-    if (isFirstTime) {
-        dom.keySetupInstructions.classList.remove('hidden');
-    }
+    if (isFirstTime) dom.keySetupInstructions.classList.remove('hidden');
 }
 
-/**
- * 显示已保存密钥的管理 UI
- */
+// 显示已保存密钥的管理 UI
 export function showKeyManagementUI() {
     dom.searchCard.classList.remove('hidden');
     dom.credentialsContainer.classList.add('hidden');
     dom.keyManagementContainer.classList.remove('hidden');
     dom.keySetupInstructions.classList.add('hidden');
     dom.userSearchArea.classList.remove('hidden');
+}
+
+// 创建单个谱面搜索结果的HTML卡片
+export function createBeatmapsetCardHTML(beatmapset) {
+    const osuStandardDiffs = (beatmapset.beatmaps || []).filter(b => b.mode_int === 0).sort((a, b) => a.difficulty_rating - b.difficulty_rating);
+    if (osuStandardDiffs.length === 0) return '';
+    const minDifficulty = 0, maxDifficulty = 12;
+    const getPosition = (difficulty) => ((difficulty - minDifficulty) / (maxDifficulty - minDifficulty)) * 100;
+    const gradientStops = [0.1, 1.25, 2, 2.5, 3.3, 4.2, 4.9, 5.8, 6.7, 7.7, 9, 10.5, 12].map(star =>
+        `${getDifficultyColor(star)} ${getPosition(star)}%`).join(', ');
+    const gradientStyle = `background: linear-gradient(to right, ${gradientStops});`;
+    const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
+    const difficultyLinesHTML = osuStandardDiffs.map((b, index) => {
+        const position = getPosition(b.difficulty_rating);
+        const color = getDifficultyColor(b.difficulty_rating);
+        const beatmapData = JSON.stringify(b).replace(/'/g, "&apos;");
+        const selectedClass = (index === osuStandardDiffs.length - 1) ? 'is-selected' : '';
+        const diffNameHTML = `<div class="indicator-info__name">${b.version} (${b.difficulty_rating.toFixed(2)}★)</div>`;
+        const mapperHTML = `<div class="indicator-info__mapper">by ${beatmapset.creator}</div>`;
+        return `
+            <div class="difficulty-indicator ${selectedClass}"
+                 style="left: ${position}%;"
+                 data-beatmap='${beatmapData}'>
+                <div class="indicator-line" style="background-color: ${color}; --indicator-color: ${color};"></div>
+                <div class="indicator-info">
+                    ${diffNameHTML}
+                    ${mapperHTML}
+                </div>
+            </div>
+        `;
+    }).join('');
+    const status = beatmapset.status.charAt(0).toUpperCase() + beatmapset.status.slice(1);
+    const statusClass = `status-tag status-${beatmapset.status}`;
+    const displayDate = beatmapset.ranked_date ? new Date(beatmapset.ranked_date) : new Date(beatmapset.last_updated);
+    const dateString = displayDate.toLocaleDateString('zh-CN');
+    const playCount = formatNumber(beatmapset.play_count);
+    const favouriteCount = formatNumber(beatmapset.favourite_count);
+    const downloadUrl = `${DOWNLOAD_SOURCE_INFO[downloadSource].url}${beatmapset.id}`;
+    const songTitle = `${beatmapset.artist} - ${beatmapset.title}`;
+    return `
+        <div class="beatmap-card">
+            <div class="beatmap-card__header" style="background-image: url('${beatmapset.covers.card}')">
+                <div class="beatmap-card__title" title="${songTitle}">${beatmapset.title}</div>
+                <div class="beatmap-card__artist">by ${beatmapset.artist}</div>
+                <div class="beatmap-card__creator">谱师: ${beatmapset.creator}</div>
+                <span class="${statusClass}">${status}</span>
+                <div class="beatmap-card__actions" data-beatmapset='${beatmapsetJson}'>
+                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-title="${beatmapset.title.replace(/"/g, '&quot;')}" data-artist="${beatmapset.artist.replace(/"/g, '&quot;')}" title="试听">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9 13c0 1.105-1.12 2-2.5 2S4 14.105 4 13s1.12-2 2.5-2 2.5.895 2.5 2z"/><path fill-rule="evenodd" d="M9 3v10H8V3h1z"/><path d="M8 2.82a1 1 0 0 1 .804-.98l3-.6A1 1 0 0 1 13 2.22V4L8 5V2.82z"/></svg>
+                    </button>
+                    <button class="download-btn card-pp-calc-trigger" title="计算选中难度的PP">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8zM4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H4z"/><path d="M4 2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-2zm0 4a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-4z"/></svg>
+                    </button>
+                    <a href="${downloadUrl}" data-beatmapset-id="${beatmapset.id}" target="_blank" rel="noopener noreferrer" title="下载铺面" class="download-btn beatmap-download-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="beatmap-card__body">
+                <div class="beatmap-card__stats">
+                    <div class="beatmap-card__stats-group">
+                        <span>❤️ ${favouriteCount}</span>
+                        <span>▶️ ${playCount}</span>
+                    </div>
+                    <div class="beatmap-card__stats-group">
+                        <span>🗓️ ${dateString}</span>
+                    </div>
+                </div>
+                <div class="beatmap-card__difficulty-bar">
+                    <div class="difficulty-gradient" style="${gradientStyle}"></div>
+                    ${difficultyLinesHTML}
+                </div>
+            </div>
+        </div>
+    `;
 }
