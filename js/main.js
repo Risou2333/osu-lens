@@ -419,6 +419,7 @@ function setupEventListeners() {
             e.stopPropagation(); 
         } else if (mainContent) {
             // 如果点击的是玩家信息区域
+            dom.searchHistoryContainer.classList.add('hidden');
             const username = mainContent.dataset.username;
             dom.usernameInput.value = username;
             handleSearch();
@@ -429,7 +430,10 @@ function setupEventListeners() {
 
     dom.toggleSearchBtn.addEventListener('click', () => {
         const isHidden = dom.searchCard.classList.toggle('hidden');
-        if (!isHidden) window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!isHidden) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            dom.usernameInput.focus();
+        }
     });
 
     dom.sourceToggleBtn.addEventListener('click', () => {
