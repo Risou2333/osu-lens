@@ -331,7 +331,7 @@
                             <h3 class="text-lg font-semibold border-b pb-2 mb-3 text-center" style="border-color: var(--input-border-color); color: #ffffff;">Performance Points</h3>
                             <div class="flex flex-col justify-center items-center">
                                 <div id="pp-calc-pp-display" class="text-5xl font-bold" style="color: #38bdf8;">0.00</div>
-                                <div id="pp-calc-fc-pp-display" class="text-sm -mt-1 font-normal" style="color: #e95f5a;">
+                                <div id="pp-calc-fc-pp-display" class="text-sm -mt-1 font-normal" style="color: #e95f5a;" title="PFC：以最大连击数Full Combo，不遗漏滑条尾">
                                     (<span id="pp-calc-fc-pp-value"></span> if PFC)
                                 </div>                              
                                 <div id="pp-calc-pp-breakdown" class="flex flex-col items-center gap-y-1 text-sm mt-2">
@@ -358,6 +358,8 @@
                                 <span class="font-semibold text-sm">进阶模式</span>
                                 <label class="pp-calc-switch"><input type="checkbox" id="pp-calc-advanced-mode-checkbox"><span class="pp-calc-slider-toggle"></span></label>
                             </div>
+                            <button id="pp-calc-pfc-btn" class="pp-calc-mod-label">PFC</button>
+                            <button id="pp-calc-ss-fc-btn" class="pp-calc-mod-label">SS FC</button>
                         </div>
                         <div id="pp-calc-mods-container" class="flex flex-wrap gap-2 justify-center">
                         </div>
