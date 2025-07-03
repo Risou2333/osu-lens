@@ -437,7 +437,7 @@ function setupEventListeners() {
     });
 
     dom.sourceToggleBtn.addEventListener('click', () => {
-        const newSource = appState.downloadSource === 'nerinyan' ? 'osudirect' : 'nerinyan';
+        const newSource = downloadSource === 'nerinyan' ? 'osudirect' : 'nerinyan';
         setDownloadSource(newSource);
         updateDownloadLinks();
         showToast(`已切换下载源至: ${DOWNLOAD_SOURCE_INFO[newSource].name}`);
