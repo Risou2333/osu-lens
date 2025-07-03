@@ -506,4 +506,78 @@ export function setupPpCalculatorListeners() {
         slider.addEventListener('input', () => { input.value = slider.value; handlePpCalcScoreChange(id); });
         input.addEventListener('change', () => { slider.value = input.value; handlePpCalcScoreChange(id); });
     });
+
+    // 辅助函数：为按钮添加一次性闪烁动画
+    const flashButton = (btn) => {
+        // 防止重复添加动画类
+        if (btn.classList.contains('animate-flash')) {
+            return;
+        }
+        btn.classList.add('animate-flash');
+        // 监听动画结束事件，结束后移除类，以便下次点击时可以再次触发
+        btn.addEventListener('animationend', () => {
+            btn.classList.remove('animate-flash');
+        }, { once: true }); // { once: true } 确保监听器只执行一次后自动移除
+    };
+
+    // PFC 按钮的逻辑
+    const pfcBtn = document.getElementById('pp-calc-pfc-btn');
+    if (pfcBtn) {
+        pfcBtn.addEventListener('click', (e) => {
+            flashButton(e.currentTarget);
+            if (!calculatorState.currentDiffAttrs) return;
+            calculatorState.isInternalUpdate = true; // 开始内部更新
+            const maxCombo = calculatorState.currentDiffAttrs.maxCombo;
+
+            // 设置为 PFC (最大连击，0 miss，但保留ACC)
+            updatePpCalcSlider('combo', maxCombo);
+            updatePpCalcSlider('miss', 0);
+
+            // 在进阶模式下，如果 miss 数变为 0，需要重新计算 300 的数量
+            if (calculatorState.isAdvancedMode) {
+                const n100 = parseInt(document.getElementById('pp-calc-n100-input').value) || 0;
+                const n50 = parseInt(document.getElementById('pp-calc-n50-input').value) || 0;
+                const new_n300 = calculatorState.totalObjects - n100 - n50;
+                updatePpCalcSlider('n300', new_n300);
+            }
+
+            // 如果是 lazer 模式，也把滑条相关的设置为最大
+            if (calculatorState.isLazerMode) {
+                updatePpCalcSlider('sliderTicks', calculatorState.currentDiffAttrs.nLargeTicks ?? 0);
+                updatePpCalcSlider('sliderEnds', calculatorState.currentDiffAttrs.nSliders ?? 0);
+            }
+
+            calculatorState.isInternalUpdate = false; // 结束内部更新
+            updatePpPerformance(); // 触发PP更新
+        });
+    }
+
+    // SS FC 按钮的逻辑
+    const ssFcBtn = document.getElementById('pp-calc-ss-fc-btn');
+    if (ssFcBtn) {
+        ssFcBtn.addEventListener('click', (e) => {
+            flashButton(e.currentTarget);
+            if (!calculatorState.currentDiffAttrs) return;
+            calculatorState.isInternalUpdate = true; // 开始内部更新
+            const maxCombo = calculatorState.currentDiffAttrs.maxCombo;
+            const totalObjects = calculatorState.totalObjects;
+
+            // 设置为 SS (100% acc) 和 FC (最大连击)
+            updatePpCalcSlider('acc', 100);
+            updatePpCalcSlider('combo', maxCombo);
+            updatePpCalcSlider('miss', 0);
+            updatePpCalcSlider('n50', 0);
+            updatePpCalcSlider('n100', 0);
+            updatePpCalcSlider('n300', totalObjects);
+
+            // 如果是 lazer 模式，也把滑条相关的设置为最大
+            if (calculatorState.isLazerMode) {
+                updatePpCalcSlider('sliderTicks', calculatorState.currentDiffAttrs.nLargeTicks ?? 0);
+                updatePpCalcSlider('sliderEnds', calculatorState.currentDiffAttrs.nSliders ?? 0);
+            }
+
+            calculatorState.isInternalUpdate = false; // 结束内部更新
+            updatePpPerformance(); // 触发PP更新
+        });
+    }    
 }
