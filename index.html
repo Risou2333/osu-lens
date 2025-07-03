@@ -143,8 +143,10 @@
                 </div>
             </section>
 
-            <section id="topPlaysAnalysisSection" class="page-content hidden mt-6">
-                <h3 class="section-title">Top 100 Plays 分析</h3>
+            <section id="topPlaysAnalysisSection" class="page-content hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="section-title mb-0 border-b-0 pb-0">Top 100 Plays 分析</h3>
+                </div>
                 <div class="card p-4 sm:p-6 space-y-4">
                     <div>
                         <h4 class="analysis-subtitle">PP 分布:</h4> 
@@ -178,14 +180,14 @@
                 </div>
             </section>
             
-            <section id="topPlaysSection" class="page-content hidden mt-6">
+            <section id="topPlaysSection" class="page-content hidden">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="section-title mb-0 border-b-0 pb-0">最佳表现 (Top 100 Plays)</h3>
                     <div id="filteredPpDisplay" class="text-lg hidden">
                         筛选后权重PP: <span class="font-bold" style="color: var(--stat-value-color);">0</span>
                     </div>
                 </div>
-                <div id="topPlaysSortAndFilterControls" class="card p-4 my-4 space-y-4 hidden">
+                <div id="topPlaysSortAndFilterControls" class="card p-4 mb-4 space-y-4 hidden">
                     <div class="flex justify-between items-center mb-2 flex-wrap gap-y-2">
                         <div class="sort-controls-row">
                              <span class="sort-label">排序：</span>
@@ -231,7 +233,7 @@
                 <div id="topPlays" class="space-y-3 p-1"></div>
             </section>
 
-            <section id="recentPlaysSection" class="page-content hidden mt-6">
+            <section id="recentPlaysSection" class="page-content hidden">
                 <div class="flex justify-between items-center mb-2">
                     <div class="flex items-center gap-4">
                         <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
@@ -242,7 +244,7 @@
                         <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
                     </div>
                 </div>
-                <div id="recentPlaysControls" class="card p-4 my-4 hidden">
+                <div id="recentPlaysControls" class="card p-4 mb-4 hidden">
                     <div class="flex justify-between items-center w-full">
                         <div class="flex items-center gap-4">
                             <span class="sort-label">筛选：</span>
