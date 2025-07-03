@@ -391,3 +391,14 @@ input[type=range]:disabled, .pp-calc-input-slider:disabled { opacity: 0.4; curso
 .history-item-delete:hover {
     background-color: rgba(239, 68, 68, 0.2); /* 鼠标悬浮时显示淡红色背景 */
 }
+
+@keyframes btn-flash-effect {
+  50% {
+    background-color: #ff69b4;
+    color: black;
+  }
+}
+
+.animate-flash {
+  animation: btn-flash-effect 0.2s ease-in-out;
+}
