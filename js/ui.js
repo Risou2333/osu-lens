@@ -275,7 +275,7 @@ export function createBeatmapsetCardHTML(beatmapset) {
         <div class="beatmap-card">
             <div class="beatmap-card__header" style="background-image: url('${beatmapset.covers.card}')">
                 <div class="beatmap-card__title" title="${songTitle}">${beatmapset.title}</div>
-                <div class="beatmap-card__artist">by ${beatmapset.artist}</div>
+                <div class="beatmap-card__artist">${beatmapset.artist}</div>
                 <div class="beatmap-card__creator">谱师: ${beatmapset.creator}</div>
                 <span class="${statusClass}">${status}</span>
                 <div class="beatmap-card__actions" data-beatmapset='${beatmapsetJson}'>
