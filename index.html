@@ -27,6 +27,7 @@
                     <a data-page="topPlaysAnalysisSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">📊 Plays 分析</a>
                     <a data-page="topPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🏆 最佳表现</a>
                     <a data-page="recentPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🕒 最近游玩</a>
+                    <a data-page="beatmapSearchPage" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🎵 谱面搜索</a>
                 </div>
                 <button id="sourceToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors" title="切换下载源">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -49,7 +50,6 @@
                     <li>复制页面上显示的 “<b>客户端 ID</b>” 和 “<b>客户端密钥</b>” 并粘贴到下方对应的输入框中。</li>
                 </ol>
             </div>
-    
             <div id="credentialsContainer" class="hidden">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                    <div>
@@ -65,12 +65,10 @@
                     <button id="saveKeysBtn" class="btn-primary">保存并验证密钥</button>
                 </div>
             </div>
-    
             <div id="keyManagementContainer" class="hidden flex justify-between items-center mb-4">
                 <p class="text-sm opacity-80">✓ 已读取保存的 API 密钥。</p>
                 <button id="changeKeyBtn" class="text-sm font-medium underline hover:opacity-80 transition-opacity" style="color:var(--link-color);">更换密钥</button>
             </div>
-    
             <div id="userSearchArea" class="hidden">
                 <label for="username" class="block text-sm font-medium mb-2">输入 osu! 玩家名称或 ID:</label>
                 <div class="flex space-x-2">
@@ -149,37 +147,37 @@
                 </div>
                 <div class="card p-4 sm:p-6 space-y-4">
                     <div>
-                        <h4 class="analysis-subtitle">PP 分布:</h4> 
+                        <h4 class="analysis-subtitle">PP 分布:</h4>
                         <div id="ppScatterChartContainer" class="chart-container">
                             <canvas id="ppScatterChart"></canvas>
                             <div id="ppChartStats" class="chart-stats-overlay"></div>
                         </div>
                     </div>
                      <div>
-                         <h4 class="analysis-subtitle">谱面作者 统计:</h4> 
+                         <h4 class="analysis-subtitle">谱面作者 统计:</h4>
                          <div id="mapperScatterChartContainer" class="chart-container"> <canvas id="mapperScatterChart"></canvas> </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 pt-4">
-                        <div> 
-                            <h4 class="analysis-subtitle text-center">Rank 分布</h4> 
-                            <div id="rankChartContainer" class="pie-chart-container"><canvas id="rankPieChart"></canvas></div> 
+                        <div>
+                            <h4 class="analysis-subtitle text-center">Rank 分布</h4>
+                            <div id="rankChartContainer" class="pie-chart-container"><canvas id="rankPieChart"></canvas></div>
                         </div>
-                        <div> 
-                            <h4 class="analysis-subtitle text-center">谱面时长分布</h4> 
-                            <div id="lengthChartContainer" class="pie-chart-container"><canvas id="lengthPieChart"></canvas></div> 
+                        <div>
+                            <h4 class="analysis-subtitle text-center">谱面时长分布</h4>
+                            <div id="lengthChartContainer" class="pie-chart-container"><canvas id="lengthPieChart"></canvas></div>
                         </div>
-                        <div> 
-                            <h4 class="analysis-subtitle text-center">BPM 分布</h4> 
-                            <div id="bpmChartContainer" class="pie-chart-container"><canvas id="bpmPieChart"></canvas></div> 
+                        <div>
+                            <h4 class="analysis-subtitle text-center">BPM 分布</h4>
+                            <div id="bpmChartContainer" class="pie-chart-container"><canvas id="bpmPieChart"></canvas></div>
                         </div>
-                        <div> 
-                            <h4 class="analysis-subtitle text-center">Mods 分布</h4> 
-                            <div id="modsChartContainer" class="pie-chart-container"><canvas id="modsPieChart"></canvas></div> 
+                        <div>
+                            <h4 class="analysis-subtitle text-center">Mods 分布</h4>
+                            <div id="modsChartContainer" class="pie-chart-container"><canvas id="modsPieChart"></canvas></div>
                         </div>
                     </div>
                 </div>
             </section>
-            
+
             <section id="topPlaysSection" class="page-content hidden">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="section-title mb-0 border-b-0 pb-0">最佳表现 (Top 100 Plays)</h3>
@@ -218,7 +216,7 @@
                             <label><input type="checkbox" name="modFilter" value="HR"> HR</label>
                             <label><input type="checkbox" name="modFilter" value="HT"> HT</label>
                             <label><input type="checkbox" name="modFilter" value="DT"> DT/NC</label>
-                            <label><input type="checkbox" name="modFilter" value="TD"> TD</label> 
+                            <label><input type="checkbox" name="modFilter" value="TD"> TD</label>
                         </div>
                         <div class="filter-group combo-group">
                             <label id="fcFilterLabel">Combo状态:</label>
@@ -263,7 +261,20 @@
                 </div>
                 <div id="recentPlaysLoader" class="text-center p-4"></div>
             </section>
+
         </div>
+
+        <section id="beatmapSearchPage" class="page-content hidden">
+            <h3 class="section-title">谱面搜索(WIP)</h3>
+            <div class="card p-4 mb-4">
+                <div class="flex space-x-2">
+                    <input type="text" id="beatmapQueryInput" class="input-field flex-grow text-base" placeholder="输入歌曲名、作者、谱师等关键词或谱面ID...">
+                    <button id="beatmapSearchBtn" class="btn-primary">搜索</button>
+                </div>
+            </div>
+            <div id="beatmapSearchResultsContainer" class="space-y-3 p-1">
+            </div>
+        </section>
     </main>
 
     <div id="audioPlayer" class="hidden">
@@ -287,7 +298,7 @@
         </div>
         <div id="player-controls">
             <button id="player-play-pause-btn" title="播放/暂停">
-                <svg id="player-play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
+                <svg id="player-play-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
                 <svg id="player-pause-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="hidden" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM6 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-3z"/></svg>
             </button>
             <div class="flex-grow"></div>
@@ -297,7 +308,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="toast"></div>
 
     <!-- PP Calculator Modal -->
@@ -311,7 +322,7 @@
             </div>
             <div id="pp-calculator-body" class="p-4 sm:p-6 overflow-y-auto">
                 <div id="pp-calc-status" class="text-center text-gray-500 dark:text-gray-400 flex items-center justify-center"></div>
-                
+
                 <div id="pp-calc-content" class="hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="card p-4">
@@ -333,7 +344,7 @@
                                 <div id="pp-calc-pp-display" class="text-5xl font-bold" style="color: #38bdf8;">0.00</div>
                                 <div id="pp-calc-fc-pp-display" class="text-sm -mt-1 font-normal" style="color: #e95f5a;" title="PFC：以最大连击数Full Combo，不遗漏滑条尾（Lazer）">
                                     (<span id="pp-calc-fc-pp-value"></span> if PFC)
-                                </div>                              
+                                </div>
                                 <div id="pp-calc-pp-breakdown" class="flex flex-col items-center gap-y-1 text-sm mt-2">
                                     <div class="flex gap-x-6">
                                         <span><strong>Aim:</strong> <span id="pp-calc-pp-aim" class="stat-value">0</span></span>
@@ -371,7 +382,7 @@
             </div>
         </div>
     </div>
-    
+
     <script type="module" src="js/main.js"></script>
  </body>
  </html>
