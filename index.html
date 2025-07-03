@@ -74,8 +74,10 @@
             <div id="userSearchArea" class="hidden">
                 <label for="username" class="block text-sm font-medium mb-2">输入 osu! 玩家名称或 ID:</label>
                 <div class="flex space-x-2">
-                    <input type="text" id="username" name="username" class="input-field flex-grow text-base" placeholder="例如: mrekk, 7562902, ...">
+                    <input type="text" id="username" name="username" class="input-field flex-grow text-base" placeholder="例如: mrekk, 7562902, ..." autocomplete="off">
                     <button id="searchButton" class="btn-primary">查询</button>
+                </div>
+                <div id="searchHistoryContainer" class="hidden mt-2 border-t pt-2" style="border-color: var(--input-border-color);">
                 </div>
             </div>
         </div>
@@ -256,7 +258,8 @@
                     </div>
                 </div>
                 <div id="recentPlays" class="space-y-3 p-1">
-                    </div>
+                </div>
+                <div id="recentPlaysLoader" class="text-center p-4"></div>
             </section>
         </div>
     </main>
@@ -365,6 +368,6 @@
         </div>
     </div>
     
-    <script type="module" src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
  </body>
  </html>
