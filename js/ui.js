@@ -252,6 +252,7 @@ export function updateDownloadLinks() {
  * @param {boolean} isFirstTime - 是否是首次设置
  */
 export function showKeySetupUI(isFirstTime) {
+    dom.searchCard.classList.remove('hidden');
     dom.credentialsContainer.classList.remove('hidden');
     dom.keyManagementContainer.classList.add('hidden');
     dom.userSearchArea.classList.add('hidden');
@@ -264,6 +265,7 @@ export function showKeySetupUI(isFirstTime) {
  * 显示已保存密钥的管理 UI
  */
 export function showKeyManagementUI() {
+    dom.searchCard.classList.remove('hidden');
     dom.credentialsContainer.classList.add('hidden');
     dom.keyManagementContainer.classList.remove('hidden');
     dom.keySetupInstructions.classList.add('hidden');
