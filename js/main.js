@@ -12,7 +12,7 @@
 import init from '../rosu_pp_js/rosu_pp_js.js';
 import { dom } from './dom.js';
 import { 
-    appState, currentPlayer, recentPlaysLoaded, originalTopPlaysDetails, recentPlaysDetails,
+    appState, downloadSource, currentPlayer, recentPlaysLoaded, originalTopPlaysDetails, recentPlaysDetails,
     setAccessToken, setDownloadSource, setCurrentPlayer, setRecentPlaysLoaded, 
     setOriginalTopPlays, setRecentPlays, setProcessedPlaysForChart, resetPlayerData
 } from './state.js';
