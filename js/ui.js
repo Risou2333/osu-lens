@@ -101,16 +101,40 @@ export function renderFilteredRecentPlays() {
     dom.recentSelectAllCheckbox.checked = false;
 }
 
-// 切换和显示指定页面
+// 新增：隐藏所有主要内容区域
+export function hideAllContentSections() {
+    dom.playerDataContainer.classList.add('hidden');
+    dom.beatmapSearchPage.page.classList.add('hidden');
+    dom.searchCard.classList.add('hidden');
+    // 同时取消所有导航链接的激活状态
+    document.querySelectorAll('#navLinksContainer .nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+}
+
+// 修改：切换和显示指定页面
 export function showPage(pageId) {
     appState.activePage = pageId;
-    document.querySelectorAll('.page-content').forEach(page => {
-        page.classList.toggle('hidden', page.id !== pageId);
-    });
+    hideAllContentSections(); // 首先隐藏所有主要内容区域
+
+    const targetPageElement = document.getElementById(pageId);
+    if (!targetPageElement) return;
+
+    // 根据目标页面ID显示对应的内容区域
+    if (pageId === 'beatmapSearchPage') {
+        targetPageElement.classList.remove('hidden'); // 显示谱面搜索页面
+    } else if (pageId === 'playerInfoSection' || pageId === 'topPlaysAnalysisSection' || pageId === 'topPlaysSection' || pageId === 'recentPlaysSection') {
+        dom.playerDataContainer.classList.remove('hidden'); // 显示玩家数据总容器
+        // 在玩家数据总容器内显示具体的子页面
+        document.querySelectorAll('#playerDataContainer .page-content').forEach(page => {
+            page.classList.toggle('hidden', page.id !== pageId);
+        });
+    }
+
+    // 设置被点击的导航链接为激活状态
     document.querySelectorAll('#navLinksContainer .nav-link').forEach(link => {
         link.classList.toggle('active', link.dataset.page === pageId);
     });
-    dom.searchCard.classList.add('hidden');
 }
 
 // 渲染经过筛选和排序的 Top Plays
@@ -216,7 +240,17 @@ export function createBeatmapsetCardHTML(beatmapset) {
         const beatmapData = JSON.stringify(b).replace(/'/g, "&apos;");
         const selectedClass = (index === osuStandardDiffs.length - 1) ? 'is-selected' : '';
         const diffNameHTML = `<div class="indicator-info__name">${b.version} (${b.difficulty_rating.toFixed(2)}★)</div>`;
-        const mapperHTML = `<div class="indicator-info__mapper">by ${beatmapset.creator}</div>`;
+        const version = b.version;
+        let diffMapper = beatmapset.creator; // 默认使用 beatmapset.creator
+        const mapperMatch = version.match(/^(.+?)'s\s/i) || version.match(/^(.+?)'\s/i); // 匹配 "'s " 或 "'"
+        if (mapperMatch && mapperMatch[1]) {
+            diffMapper = mapperMatch[1];
+        }
+        let displayMapper = diffMapper;
+        if (version.toLowerCase().startsWith('collab')) {
+            displayMapper += '等';
+        }
+        const mapperHTML = `<div class="indicator-info__mapper">by ${displayMapper}</div>`;
         return `
             <div class="difficulty-indicator ${selectedClass}"
                  style="left: ${position}%;"

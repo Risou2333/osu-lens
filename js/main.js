@@ -17,7 +17,7 @@ import { setupDragToSelect, setupBackgroundAnimation, showToast, setLoading, dis
 import { renderAllEmbeddedCharts } from './charts.js';
 import { setupAudioPlayerListeners } from './audio-player.js';
 import { createPpCalculatorControls, initializePpCalculatorMods, setupPpCalculatorListeners, openPpCalculatorForBeatmap } from './pp-calculator.js';
-import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML, createBeatmapsetCardHTML } from './ui.js';
+import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML, createBeatmapsetCardHTML, hideAllContentSections } from './ui.js';
 
 async function loadMoreRecentPlays() {
     if (appState.isFetchingRecentPlays || appState.allRecentPlaysLoaded || !currentPlayer) return;
@@ -426,12 +426,30 @@ function setupEventListeners() {
     dom.searchButton.addEventListener('click', handleSearch);
 
     dom.toggleSearchBtn.addEventListener('click', () => {
-        const isHidden = dom.searchCard.classList.toggle('hidden');
-        if (!isHidden) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            dom.usernameInput.focus();
+        // 在切换前，先检查搜索框当前是否可见
+        const wasSearchCardVisible = !dom.searchCard.classList.contains('hidden');
+
+        hideAllContentSections(); // 统一隐藏所有主要内容区域，确保只显示一个
+
+        if (wasSearchCardVisible) {
+            // 如果搜索框之前是可见的，说明用户想隐藏它。
+            // 隐藏所有后，决定默认显示哪个页面。
+            // 如果有已加载的玩家数据，则显示玩家信息页面。
+            if (currentPlayer) {
+                showPage('playerInfoSection'); // 这会显示玩家信息页面并激活其导航链接
+            }
+            // 如果没有 currentPlayer，所有区域将保持隐藏状态（由 hideAllContentSections 处理），这对于初始状态是合适的。
+        } else {
+            // 如果搜索框之前是隐藏的，说明用户想显示它。
+            dom.searchCard.classList.remove('hidden'); // 显示搜索框
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // 滚动到顶部
+            dom.usernameInput.focus(); // 聚焦输入框
+            // 激活“搜索”按钮图标本身
+            dom.toggleSearchBtn.classList.add('active');
+            // 其他导航链接的非激活状态已由 hideAllContentSections 处理
         }
     });
+
 
     dom.sourceToggleBtn.addEventListener('click', () => {
         const newSource = downloadSource === 'nerinyan' ? 'osudirect' : 'nerinyan';
@@ -481,15 +499,19 @@ function setupEventListeners() {
             const pageId = link.dataset.page;
 
             if (pageId === 'beatmapSearchPage') {
-                dom.playerDataContainer.classList.add('hidden');
+                // 对于谱面搜索页，直接调用 showPage
                 showPage(pageId);
-                handleBeatmapSearch();
+                // 仅在首次进入谱面搜索页或需要刷新时触发搜索
+                if (dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) {
+                    handleBeatmapSearch();
+                }
                 return;
             }
 
             if (currentPlayer) {
-                dom.playerDataContainer.classList.remove('hidden');
-                
+                // 如果已加载玩家数据，则正常显示对应页面
+                showPage(pageId);
+
                 if (pageId === 'recentPlaysSection' && !recentPlaysLoaded) {
                     setRecentPlaysLoaded(true);
                     dom.recentPlaysControls.classList.remove('hidden');
@@ -498,15 +520,18 @@ function setupEventListeners() {
                     dom.refreshRecentPlaysBtn.classList.remove('hidden');
                     loadMoreRecentPlays();
                 }
-                showPage(pageId);
             } else {
+                // 如果没有玩家数据，提示用户先搜索，并显示搜索框
                 showToast("请先搜索一位玩家");
-                dom.searchCard.classList.remove('hidden');
+                hideAllContentSections(); // 隐藏所有内容
+                dom.searchCard.classList.remove('hidden'); // 显示搜索框
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 dom.usernameInput.focus();
+                dom.toggleSearchBtn.classList.add('active'); // 激活搜索按钮
             }
         });
     });
+
 
     dom.recentPlaysLoader.addEventListener('click', (e) => {
         if (e.target && e.target.id === 'loadMoreBtn') {
