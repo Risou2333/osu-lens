@@ -209,8 +209,8 @@ input[type=range]:disabled, .pp-calc-input-slider:disabled { opacity: 0.4; curso
 .difficulty-indicator { position: absolute; top: 0px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .indicator-line { width: 3px; height: 22px; border-radius: 2px; border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 0 3px rgba(0,0,0,0.5); transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .indicator-info { position: absolute; top: 28px; color: var(--text-color); font-size: 0.7rem; line-height: 1.2; text-align: center; white-space: nowrap; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.7); }
-.indicator-info__name { font-weight: 600; }
-.indicator-info__mapper { font-size: 0.65rem; opacity: 0.8; }
+.indicator-info__name { font-size: 0.7rem; font-weight: 600; }
+.indicator-info__mapper { font-size: 0.7rem; opacity: 0.8; }
 
 .difficulty-indicator.is-selected .indicator-line { transform: scale(1.2, 1.5); box-shadow: 0 0 10px 3px var(--indicator-color); }
 .difficulty-indicator.is-selected .indicator-info { opacity: 1; visibility: visible; }
