@@ -147,39 +147,46 @@ function loadSearchHistory() {
 
 async function handleSearch() {
     const query = dom.usernameInput.value.trim();
-    if (!query) { 
-        displayError("请输入玩家名称或ID。"); 
-        return; 
+    
+    dom.usernameInput.classList.remove('input-error');
+
+    if (!query) {
+        showToast("请输入玩家名称或ID。");
+        dom.usernameInput.classList.add('input-error');
+        return;
     }
     if (!dom.clientIdInput.value || !dom.clientSecretInput.value) {
-        displayError("请输入您的客户端ID和客户端密钥。");
+        showToast("请输入您的客户端ID和客户端密钥。");
         showKeySetupUI(true);
         return;
     }
+
+    const initialActivePage = appState.activePage;
     
-    setLoading(true, `正在加载玩家信息...`, true);
+    // 【核心修改】无条件调用 setLoading，并设置全局状态
+    setLoading(true, `正在加载 ${query} 的数据...`, true);
+    appState.isPlayerSearchActive = true;
     resetPlayerData();
-    
+
     try {
         const player = await fetchV2Api(`users/${query}/osu`);
-        if (player === null) { 
-            setLoading(false); 
-            displayError(`未找到玩家 "${query}"。请检查拼写或ID是否正确。`);
-            return; 
+
+        if (player === null) {
+            setLoading(false); // 在 finally 前手动关闭，因为会提前 return
+            appState.isPlayerSearchActive = false;
+            showToast(`未找到玩家 "${query}"`);
+            dom.usernameInput.classList.add('input-error');
+            dom.usernameInput.value = '';
+            return;
         }
         
         setCurrentPlayer(player);
         addToSearchHistory(player);
         dom.searchHistoryContainer.classList.add('hidden');
-        setRecentPlaysLoaded(false);
-        dom.recentPlaysDiv.innerHTML = '';
-        [dom.recentPlaysControls, dom.recentPpGainDisplay].forEach(el => el.classList.add('hidden'));
-        dom.refreshRecentPlaysBtn.classList.add('hidden');
+        // ... (函数其余的成功逻辑保持不变)
 
-        setLoading(true, `正在加载 ${player.username} 的 Top Plays...`);
-        
         const topPlaysData = await fetchV2Api(`users/${player.id}/scores/best?limit=100&mode=osu`);
-
+        
         let beatmapMap = new Map();
         const topIds = topPlaysData?.map(p => p.beatmap.id) || [];
 
@@ -215,24 +222,23 @@ async function handleSearch() {
             dom.topPlaysDiv.innerHTML = '<p class="opacity-70 text-center p-4">该玩家暂无最佳表现记录。</p>';
             [dom.topPlaysSortAndFilterControls, dom.filteredPpDisplay].forEach(el => el.classList.add('hidden'));
         }
-        
+
         dom.topPlaysAnalysisSection.classList.toggle('hidden', !originalTopPlaysDetails.length);
         if (originalTopPlaysDetails.length) {
-            renderAllEmbeddedCharts(originalTopPlaysDetails); 
+            renderAllEmbeddedCharts(originalTopPlaysDetails);
         }
-
-        dom.playerDataContainer.classList.remove('hidden');
-        dom.navLinksContainer.classList.remove('hidden');
-        dom.errorMessageDiv.classList.add('hidden');
-        dom.searchCard.classList.add('hidden');
         
         showPage('playerInfoSection');
 
     } catch (error) {
         console.error("处理玩家数据时出错:", error);
-        displayError(`${error.message}`);
+        showToast(`处理玩家数据时出错: ${error.message}`);
+        dom.usernameInput.classList.add('input-error');
+        dom.usernameInput.value = '';
     } finally {
-        setLoading(false);
+        // 【核心修改】使用 finally 块确保状态总是被重置
+        setLoading(false); 
+        appState.isPlayerSearchActive = false;
     }
 }
 
@@ -246,7 +252,8 @@ async function handleRecentPlaysRefresh() {
     try {
         const existingPlayIds = new Set(recentPlaysDetails.map(d => d.playData.id));
         if (existingPlayIds.size === 0) {
-            await fetchAndRenderRecentPlays();
+            // 【修改】调用正确的函数来加载最近成绩
+            await loadMoreRecentPlays();
             showToast("已加载最新成绩。");
             return;
         }
@@ -330,10 +337,11 @@ async function handleBeatmapSearch(isLoadMore = false) {
         return;
     }
 
-    appState.isFetchingBeatmaps = true;
     const bdom = dom.beatmapSearchPage;
-    const query = bdom.queryInput.value.trim();
+    const query = String(bdom.queryInput.value).trim();
     const resultsContainer = bdom.resultsContainer;
+
+    appState.isFetchingBeatmaps = true;
 
     if (isLoadMore) {
         const loader = document.createElement('div');
@@ -345,14 +353,30 @@ async function handleBeatmapSearch(isLoadMore = false) {
         appState.beatmapSearchCursor = null;
         resultsContainer.className = 'beatmap-grid-container';
         resultsContainer.innerHTML = `<div class="text-center p-4" style="grid-column: 1 / -1;"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div><p class="mt-2">正在搜索...</p></div>`;
+        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     try {
-        const result = await searchBeatmapsets(query, 'last_updated_desc', appState.beatmapSearchCursor);
+        // --- 核心修改：在这里构建包含状态参数的请求 ---
+        const searchParams = {
+            keywords: query,
+            mode: 0,
+        };
+
+        // 仅当筛选状态不是默认的“拥有排行榜”（空字符串）时，才添加categories参数
+        if (appState.beatmapStatusFilter) {
+            searchParams.categories = appState.beatmapStatusFilter;
+        }
+
+        if (isLoadMore && appState.beatmapSearchCursor) {
+            searchParams.cursor_string = appState.beatmapSearchCursor;
+        }
         
+        const result = await searchBeatmapsets(searchParams);
+
         const loader = resultsContainer.querySelector('.beatmap-loader');
         if (loader) loader.remove();
-        
+
         if (!isLoadMore) {
             resultsContainer.innerHTML = '';
         }
@@ -360,14 +384,31 @@ async function handleBeatmapSearch(isLoadMore = false) {
         if (result && result.beatmapsets && result.beatmapsets.length > 0) {
             const cardsHTML = result.beatmapsets.map(createBeatmapsetCardHTML).join('');
             resultsContainer.insertAdjacentHTML('beforeend', cardsHTML);
-            
             appState.beatmapSearchCursor = result.cursor_string;
+
+            // --- 如果返回的谱面数少于预期，说明是最后一页 ---
+            if (result.beatmapsets.length < 50) { // osu! api v2 默认每页返回 50 个
+                 appState.beatmapSearchCursor = null;
+                 const noMoreResults = document.createElement('p');
+                 noMoreResults.className = 'opacity-70 text-center p-4';
+                 noMoreResults.style.gridColumn = '1 / -1';
+                 noMoreResults.textContent = '没有更多了';
+                 resultsContainer.appendChild(noMoreResults);
+            }
         } else {
             appState.beatmapSearchCursor = null;
             if (!isLoadMore) {
                 resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;">没有找到相关的谱面。</p>';
+            } else {
+                // --- 新增代码：在加载更多时，如果没有结果，则显示提示 ---
+                const noMoreResults = document.createElement('p');
+                noMoreResults.className = 'opacity-70 text-center p-4';
+                noMoreResults.style.gridColumn = '1 / -1';
+                noMoreResults.textContent = '没有更多了';
+                resultsContainer.appendChild(noMoreResults);
             }
         }
+
     } catch (error) {
         console.error("谱面搜索失败:", error);
         resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">搜索失败: ${error.message}</p>`;
@@ -390,21 +431,25 @@ function setupCredentials() {
 }
 
 function setupEventListeners() {
-    dom.usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
-
-    let historyHideTimeout;
-
+    
     dom.usernameInput.addEventListener('focus', () => {
-        clearTimeout(historyHideTimeout);
         if (appState.searchHistory.length > 0) {
             dom.searchHistoryContainer.classList.remove('hidden');
         }
     });
 
-    dom.usernameInput.addEventListener('blur', () => {
-        historyHideTimeout = setTimeout(() => {
+    dom.usernameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
             dom.searchHistoryContainer.classList.add('hidden');
-        }, 150);
+
+            const button = dom.searchButton;
+            button.classList.add('animate-flash');
+            button.addEventListener('animationend', () => {
+                button.classList.remove('animate-flash');
+            }, { once: true });
+            
+            handleSearch();
+        }
     });
 
     dom.searchHistoryContainer.addEventListener('click', (e) => {
@@ -417,36 +462,37 @@ function setupEventListeners() {
             e.stopPropagation(); 
         } else if (mainContent) {
             dom.searchHistoryContainer.classList.add('hidden');
+            
             const username = mainContent.dataset.username;
             dom.usernameInput.value = username;
             handleSearch();
         }
     });
 
-    dom.searchButton.addEventListener('click', handleSearch);
+    dom.searchButton.addEventListener('click', () => {
+        dom.searchHistoryContainer.classList.add('hidden');
+
+        dom.searchButton.classList.add('animate-flash');
+        dom.searchButton.addEventListener('animationend', () => {
+            dom.searchButton.classList.remove('animate-flash');
+        }, { once: true });
+        
+        handleSearch();
+    });
 
     dom.toggleSearchBtn.addEventListener('click', () => {
-        // 在切换前，先检查搜索框当前是否可见
         const wasSearchCardVisible = !dom.searchCard.classList.contains('hidden');
-
-        hideAllContentSections(); // 统一隐藏所有主要内容区域，确保只显示一个
+        hideAllContentSections(); 
 
         if (wasSearchCardVisible) {
-            // 如果搜索框之前是可见的，说明用户想隐藏它。
-            // 隐藏所有后，决定默认显示哪个页面。
-            // 如果有已加载的玩家数据，则显示玩家信息页面。
             if (currentPlayer) {
-                showPage('playerInfoSection'); // 这会显示玩家信息页面并激活其导航链接
+                showPage('playerInfoSection'); 
             }
-            // 如果没有 currentPlayer，所有区域将保持隐藏状态（由 hideAllContentSections 处理），这对于初始状态是合适的。
         } else {
-            // 如果搜索框之前是隐藏的，说明用户想显示它。
-            dom.searchCard.classList.remove('hidden'); // 显示搜索框
-            window.scrollTo({ top: 0, behavior: 'smooth' }); // 滚动到顶部
-            dom.usernameInput.focus(); // 聚焦输入框
-            // 激活“搜索”按钮图标本身
+            dom.searchCard.classList.remove('hidden'); 
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            dom.usernameInput.focus(); 
             dom.toggleSearchBtn.classList.add('active');
-            // 其他导航链接的非激活状态已由 hideAllContentSections 处理
         }
     });
 
@@ -498,20 +544,28 @@ function setupEventListeners() {
             e.preventDefault();
             const pageId = link.dataset.page;
 
+            // 【核心代码】如果正在加载玩家数据，则阻止所有导航链接的点击
+            if (appState.isPlayerSearchActive) {
+                showToast("请等待当前玩家数据加载完成");
+                return; // 中断后续所有操作
+            }
+
+            // --- 加载状态结束后的正常逻辑 ---
+
+            // 如果是谱面搜索页，则直接显示
             if (pageId === 'beatmapSearchPage') {
-                // 对于谱面搜索页，直接调用 showPage
                 showPage(pageId);
-                // 仅在首次进入谱面搜索页或需要刷新时触发搜索
                 if (dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) {
                     handleBeatmapSearch();
                 }
                 return;
             }
 
+            // 对于其他玩家相关的页面，检查是否已加载玩家数据
             if (currentPlayer) {
-                // 如果已加载玩家数据，则正常显示对应页面
                 showPage(pageId);
 
+                // 如果是首次点击“最近游玩”，则开始加载数据
                 if (pageId === 'recentPlaysSection' && !recentPlaysLoaded) {
                     setRecentPlaysLoaded(true);
                     dom.recentPlaysControls.classList.remove('hidden');
@@ -521,13 +575,13 @@ function setupEventListeners() {
                     loadMoreRecentPlays();
                 }
             } else {
-                // 如果没有玩家数据，提示用户先搜索，并显示搜索框
+                // 如果没有玩家数据，提示用户先搜索
                 showToast("请先搜索一位玩家");
-                hideAllContentSections(); // 隐藏所有内容
-                dom.searchCard.classList.remove('hidden'); // 显示搜索框
+                hideAllContentSections();
+                dom.searchCard.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 dom.usernameInput.focus();
-                dom.toggleSearchBtn.classList.add('active'); // 激活搜索按钮
+                dom.toggleSearchBtn.classList.add('active');
             }
         });
     });
@@ -627,9 +681,26 @@ function setupEventListeners() {
     setupAudioPlayerListeners();
     setupPpCalculatorListeners();
 
-    dom.beatmapSearchPage.searchBtn.addEventListener('click', handleBeatmapSearch);
+    dom.beatmapSearchPage.searchBtn.addEventListener('click', () => {
+        // 添加动画类
+        dom.beatmapSearchPage.searchBtn.classList.add('animate-flash');
+        // 监听动画结束事件
+        dom.beatmapSearchPage.searchBtn.addEventListener('animationend', () => {
+            dom.beatmapSearchPage.searchBtn.classList.remove('animate-flash');
+        }, { once: true });
+
+        handleBeatmapSearch();
+    });
     dom.beatmapSearchPage.queryInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
+            // --- 新增代码：触发“搜索”按钮的动画 ---
+            const button = dom.beatmapSearchPage.searchBtn;
+            button.classList.add('animate-flash');
+            button.addEventListener('animationend', () => {
+                button.classList.remove('animate-flash');
+            }, { once: true });
+            // --- 新增代码结束 ---
+            
             handleBeatmapSearch();
         }
     });
@@ -649,6 +720,11 @@ function setupEventListeners() {
     document.body.addEventListener('wheel', e => {
         const bar = e.target.closest('.beatmap-card__difficulty-bar');
         if (!bar) return;
+
+        // 【修改】如果正在拖拽选择，则禁用滚轮切换难度的功能
+        if (document.body.classList.contains('is-drag-selecting')) {
+            return;
+        }
 
         e.preventDefault();
 
@@ -689,6 +765,58 @@ function setupEventListeners() {
             }
         }
     });
+
+        const statusFiltersContainer = document.getElementById('beatmapStatusFilters');
+
+    // 辅助函数：更新筛选按钮的激活状态
+    const updateStatusFiltersUI = () => {
+        statusFiltersContainer.querySelectorAll('.sort-header').forEach(header => {
+            header.classList.toggle('active', header.dataset.status === appState.beatmapStatusFilter);
+        });
+    };
+
+    // 为筛选栏绑定点击事件
+    statusFiltersContainer.addEventListener('click', (e) => {
+        const targetHeader = e.target.closest('.sort-header');
+        if (targetHeader && !targetHeader.classList.contains('active')) {
+            appState.beatmapStatusFilter = targetHeader.dataset.status;
+            updateStatusFiltersUI();
+            handleBeatmapSearch(); // 点击后立即执行搜索
+        }
+    });
+
+    // 为“全选”复选框添加事件监听
+    document.getElementById('beatmapSelectAllCheckbox').addEventListener('change', (e) => {
+        beatmapResultsContainer.querySelectorAll('.beatmap-card').forEach(card => {
+            card.classList.toggle('selected', e.target.checked);
+        });
+    });
+
+    // 为“下载选中”按钮添加事件监听
+    document.getElementById('beatmapDownloadSelectedBtn').addEventListener('click', () => {
+        const baseUrl = DOWNLOAD_SOURCE_INFO[downloadSource].url;
+        
+        // 从选中的卡片中提取 beatmapset ID
+        const ids = [...new Set(
+            Array.from(beatmapResultsContainer.querySelectorAll('.beatmap-card.selected'))
+                 .map(card => card.querySelector('.beatmap-card__actions')?.dataset.beatmapset)
+                 .filter(Boolean) // 过滤掉无效数据
+                 .map(json => JSON.parse(json).id)
+        )];
+
+        if (ids.length === 0) {
+            showToast('请先选择要下载的谱面');
+            return;
+        }
+        
+        // 批量打开下载链接
+        ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
+    });
+
+    // --- 新增代码：当用户在玩家输入框中输入时，移除错误状态 ---
+    dom.usernameInput.addEventListener('input', () => {
+        dom.usernameInput.classList.remove('input-error');
+    });    
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -711,4 +839,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setupDragToSelect({ container: dom.topPlaysDiv, selectAllCheckbox: dom.selectAllCheckbox });
     setupDragToSelect({ container: dom.recentPlaysDiv, selectAllCheckbox: dom.recentSelectAllCheckbox });
+    setupDragToSelect({
+        container: dom.beatmapSearchPage.resultsContainer,
+        selectAllCheckbox: document.getElementById('beatmapSelectAllCheckbox'),
+        cardSelector: '.beatmap-card' // 指定要选择的卡片类名
+    });
 });

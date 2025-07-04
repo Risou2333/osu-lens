@@ -5,14 +5,27 @@ import { dom } from './dom.js';
 
 let toastTimeout;
 
-// 显示一个短暂的提示信息 (Toast)
 export function showToast(message) {
+    const toastElement = dom.toast;
+    
+    // 先清除旧的计时器和动画效果
     clearTimeout(toastTimeout);
-    dom.toast.textContent = message;
-    dom.toast.classList.add('visible');
-    toastTimeout = setTimeout(() => {
-        dom.toast.classList.remove('visible');
-    }, 2500);
+    toastElement.classList.remove('visible');
+
+    // 强制浏览器重新计算样式，以便动画能够重新开始
+    // 这行代码虽然看起来没什么用，但它是一个强制浏览器重绘的小技巧
+    void toastElement.offsetWidth;
+
+    // 确保在设置新内容和显示之前，元素是隐藏的
+    setTimeout(() => {
+        toastElement.textContent = message;
+        toastElement.classList.add('visible');
+
+        // 设置新的计时器来隐藏提示
+        toastTimeout = setTimeout(() => {
+            toastElement.classList.remove('visible');
+        }, 1800); // 稍微延长显示时间，体验更好
+    }, 50); // 添加一个微小的延迟，确保移除/添加class的动作被浏览器正确处理
 }
 
 // 设置背景粒子动画
@@ -38,14 +51,18 @@ export function setupBackgroundAnimation() {
 
 // 设置拖拽选择功能
 export function setupDragToSelect(config) {
-    const { container, selectAllCheckbox } = config;
+    const { container, selectAllCheckbox, cardSelector = '.glass-card' } = config;
     if (!container) return;
+
     let isDragging = false;
     let dragHappened = false;
     let startIndex = -1;
     let dragAction = 'select';
     let allCards = [];
     let scrollInterval = null;
+    let startX = 0;
+    let startY = 0;
+
     const updateSelectionPreview = (currentIndex) => {
         if (startIndex === -1) return;
         allCards.forEach(card => card.classList.remove('drag-over'));
@@ -55,33 +72,51 @@ export function setupDragToSelect(config) {
             if (allCards[i]) allCards[i].classList.add('drag-over');
         }
     };
+
     container.addEventListener('mousedown', e => {
         if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
         e.preventDefault();
-        const card = e.target.closest('.glass-card');
+        const card = e.target.closest(cardSelector);
         if (card) {
             isDragging = true;
             dragHappened = false;
-            allCards = Array.from(container.querySelectorAll('.glass-card'));
+            document.body.classList.add('is-drag-selecting');
+            allCards = Array.from(container.querySelectorAll(cardSelector));
             startIndex = allCards.indexOf(card);
             dragAction = card.classList.contains('selected') ? 'deselect' : 'select';
-            updateSelectionPreview(startIndex);
+            startX = e.clientX;
+            startY = e.clientY;
         }
     });
-    container.addEventListener('mouseover', e => {
+
+    container.addEventListener('mousemove', e => {
         if (!isDragging) return;
-        dragHappened = true;
-        const currentCard = e.target.closest('.glass-card');
-        if (currentCard) {
-            const currentIndex = allCards.indexOf(currentCard);
-            updateSelectionPreview(currentIndex);
+        if (!dragHappened) {
+            const moved = Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5;
+            if (moved) {
+                dragHappened = true;
+            }
         }
-    });
-    const stopDragging = (e) => {
-        if (!isDragging) return;
-        allCards.forEach(card => card.classList.remove('drag-over'));
         if (dragHappened) {
-            const endCard = e.target.closest('.glass-card');
+            allCards = Array.from(container.querySelectorAll(cardSelector));
+            const currentCard = e.target.closest(cardSelector);
+            if (currentCard) {
+                const currentIndex = allCards.indexOf(currentCard);
+                if (currentIndex !== -1) {
+                    updateSelectionPreview(currentIndex);
+                }
+            }
+        }
+    });
+
+    window.addEventListener('mouseup', e => {
+        if (!isDragging) return;
+        allCards = Array.from(container.querySelectorAll(cardSelector));
+        allCards.forEach(card => card.classList.remove('drag-over'));
+        document.body.classList.remove('is-drag-selecting');
+        clearInterval(scrollInterval);
+        if (dragHappened) {
+            const endCard = e.target.closest(cardSelector);
             if (startIndex !== -1 && endCard) {
                 const endIndex = allCards.indexOf(endCard);
                 const min = Math.min(startIndex, endIndex);
@@ -92,19 +127,32 @@ export function setupDragToSelect(config) {
                     }
                 }
             }
-        }
-        isDragging = false;
-        clearInterval(scrollInterval);
-        setTimeout(() => {
-            dragHappened = false;
             if (selectAllCheckbox) {
-                const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
-                allCards = Array.from(container.querySelectorAll('.glass-card'));
+                const selectedCardCount = container.querySelectorAll(`${cardSelector}.selected`).length;
                 selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
             }
-        }, 0);
-    };
-    const handleAutoScroll = (e) => {
+        }
+        isDragging = false;
+    }, true);
+
+    container.addEventListener('click', e => {
+        if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
+        if (dragHappened) {
+            dragHappened = false;
+            return;
+        }
+        const card = e.target.closest(cardSelector);
+        if (card) {
+            card.classList.toggle('selected');
+            if (selectAllCheckbox) {
+                allCards = Array.from(container.querySelectorAll(cardSelector));
+                const selectedCardCount = container.querySelectorAll(`${cardSelector}.selected`).length;
+                selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
+            }
+        }
+    });
+
+    const handleAutoScroll = e => {
         if (!isDragging) return;
         clearInterval(scrollInterval);
         const viewportHeight = window.innerHeight;
@@ -116,32 +164,21 @@ export function setupDragToSelect(config) {
             scrollInterval = setInterval(() => window.scrollBy(0, scrollSpeed), 15);
         }
     };
-    window.addEventListener('mouseup', stopDragging, true);
     window.addEventListener('mousemove', handleAutoScroll);
-    container.addEventListener('click', e => {
-        if (e.target.closest('a, button, .beatmap-cover-container, .pp-calc-btn')) return;
-        if (!dragHappened) {
-            const card = e.target.closest('.glass-card');
-            if (card) {
-                card.classList.toggle('selected');
-                if (selectAllCheckbox) {
-                    const selectedCardCount = container.querySelectorAll('.glass-card.selected').length;
-                    allCards = Array.from(container.querySelectorAll('.glass-card'));
-                    selectAllCheckbox.checked = allCards.length > 0 && selectedCardCount === allCards.length;
-                }
-            }
-        }
-    });
 }
-
 // 设置加载状态的显示
-export function setLoading(isLoading, message = "正在加载数据...", isInitialLoad = false) {
+export function setLoading(isLoading, message = "正在加载数据...", isGlobalReset = true) {
     dom.loadingDiv.querySelector('p').textContent = message;
     dom.loadingDiv.classList.toggle('hidden', !isLoading);
-    if(isLoading) {
+
+    // 【核心修改】通过给 body 添加/移除 class 来控制全局加载状态
+    document.body.classList.toggle('is-loading', isLoading);
+
+    if (isLoading && isGlobalReset) {
         dom.errorMessageDiv.classList.add('hidden');
         dom.playerDataContainer.classList.add('hidden');
-        dom.navLinksContainer.classList.add('hidden');
+        // 【核心修改】移除下面这行，我们不再隐藏导航链接
+        // dom.navLinksContainer.classList.add('hidden'); 
         dom.beatmapSearchPage.page.classList.add('hidden');
         dom.beatmapSearchPage.resultsContainer.innerHTML = '';
     }

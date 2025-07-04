@@ -78,12 +78,39 @@ export async function fetchV2Api(endpoint) {
     return await response.json();
 }
 
-export async function searchBeatmapsets(query, sort = 'last_updated_desc', cursor_string = null) {
-    let endpoint = `beatmapsets/search?q=${encodeURIComponent(query)}&sort=${sort}`;
-    
-    if (cursor_string) {
-        endpoint += `&cursor_string=${cursor_string}`;
+export async function searchBeatmapsets(searchQuery) {
+    const params = new URLSearchParams();
+
+    // --- 核心修改：定义参数映射 ---
+    // 这个映射告诉函数如何将我们代码中的名字 (如 'categories') 转换成 API 需要的名字 (如 's')
+    const paramMapping = {
+        keywords: 'q',
+        categories: 's', // 's' 是 osu! API v2 中代表谱面状态的参数
+        mode: 'm',
+        cursor_string: 'cursor_string'
+    };
+
+    // 遍历传入的 searchQuery 对象的所有属性
+    for (const key in searchQuery) {
+        if (searchQuery.hasOwnProperty(key)) {
+            const apiParam = paramMapping[key] || key;
+            const value = searchQuery[key];
+
+            // 确保值不是空的或未定义的，然后再添加到请求中
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(apiParam, value);
+            }
+        }
     }
+
+    // 为了保持空关键词搜索时的默认行为，如果外部没有提供排序方式，则默认使用'last_updated_desc'
+    if (!params.has('sort')) {
+        params.append('sort', 'last_updated_desc');
+    }
+
+    // 构建最终的API端点
+    const endpoint = `beatmapsets/search?${params.toString()}`;
     
+    // 发送API请求
     return await fetchV2Api(endpoint);
 }

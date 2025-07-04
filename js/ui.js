@@ -5,6 +5,7 @@ import { dom } from './dom.js';
 import { appState, downloadSource, originalTopPlaysDetails, recentPlaysDetails } from './state.js';
 import { formatNumber, formatPlaytime, formatDuration, getDifficultyColor } from './utils.js';
 import { DOWNLOAD_SOURCE_INFO } from './config.js';
+import { setLoading } from './ui-helpers.js';
 
 // 渲染玩家信息
 export function renderPlayerInfo(player) {
@@ -114,9 +115,12 @@ export function hideAllContentSections() {
 
 // 修改：切换和显示指定页面
 export function showPage(pageId) {
+    if (appState.isPlayerSearchActive) {
+        setLoading(false);
+    }
     appState.activePage = pageId;
     hideAllContentSections(); // 首先隐藏所有主要内容区域
-
+    dom.toggleSearchBtn.classList.remove('active');
     const targetPageElement = document.getElementById(pageId);
     if (!targetPageElement) return;
 

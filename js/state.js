@@ -25,6 +25,8 @@ export const appState = {
     recentPlaysOffset: 0,
     beatmapSearchCursor: null,
     isFetchingBeatmaps: false,
+    isPlayerSearchActive: false,
+    beatmapStatusFilter: '',
 };
 
 export const activeCharts = {};
@@ -82,4 +84,5 @@ export function resetPlayerData() {
     appState.recentPlaysOffset = 0;
     appState.beatmapSearchCursor = null;
     appState.isFetchingBeatmaps = false;
+    appState.isPlayerSearchActive = false
 }
