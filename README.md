@@ -20,8 +20,8 @@ osu!lens 是一个用于查看玩家信息和分析PP（Performance Points）的
 2. **运行项目**：
    打开`index.html`文件即可在浏览器中查看。
 
-3. **PP计算**：
-   项目中使用`rosu-pp-js`库进行PP计算，具体使用方法请参考[rosu-pp-js文档](https://github.com/MaxOhn/rosu-pp-js)。
+3. **线上Demo**：
+   您可以通过以下链接访问线上Demo：[osu!lens Demo](https://osulens.netlify.app)
 
 ## 贡献
 
