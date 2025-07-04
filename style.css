@@ -210,7 +210,7 @@ input[type=range]:disabled, .pp-calc-input-slider:disabled { opacity: 0.4; curso
 .history-item-delete:hover { background-color: rgba(239, 68, 68, 0.2); }
 
 /* 谱面卡片样式 */
-.beatmap-grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 1rem; }
+.beatmap-grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 1rem; justify-content: start; }
 .beatmap-card { display: flex; flex-direction: column; background-color: #2E343C; border-radius: 8px; overflow: hidden; height: 100%; }
 .beatmap-card__header { position: relative; height: 100px; padding: 0.75rem; display: flex; flex-direction: column; justify-content: center; color: white; background-size: cover; background-position: center; }
 .beatmap-card__header::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.1) 100%); }
