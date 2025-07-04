@@ -479,7 +479,7 @@ async function handleBeatmapIdentify() {
                     let shouldDisplay = true;
                     const beatmapsetStatus = (beatmapset.status || '').toLowerCase(); // 将API状态转为小写
                     
-                    if (statusFilter && statusFilter !== 'any') {
+                    if (statusFilter !== 'any') {
                         if (statusFilter === '') {
                             // "拥有排行榜"状态下只显示上架、社区喜爱、过审和已批准的谱面
                             shouldDisplay = ['ranked', 'loved', 'qualified', 'approved'].includes(beatmapsetStatus);
@@ -1047,7 +1047,7 @@ function setupEventListeners() {
                             let shouldDisplay = true;
                             const statusFilter = appState.beatmapStatusFilter;
                             
-                            if (statusFilter && statusFilter !== 'any') {
+                            if (statusFilter !== 'any') {
                                 if (statusFilter === '') {
                                     // "拥有排行榜"状态下只显示上架、社区喜爱、过审和已批准的谱面
                                     shouldDisplay = ['ranked', 'loved', 'qualified', 'approved'].includes(status);
