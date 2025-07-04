@@ -8,24 +8,19 @@ let toastTimeout;
 export function showToast(message) {
     const toastElement = dom.toast;
     
-    // 先清除旧的计时器和动画效果
     clearTimeout(toastTimeout);
     toastElement.classList.remove('visible');
 
-    // 强制浏览器重新计算样式，以便动画能够重新开始
-    // 这行代码虽然看起来没什么用，但它是一个强制浏览器重绘的小技巧
     void toastElement.offsetWidth;
 
-    // 确保在设置新内容和显示之前，元素是隐藏的
     setTimeout(() => {
         toastElement.textContent = message;
         toastElement.classList.add('visible');
 
-        // 设置新的计时器来隐藏提示
         toastTimeout = setTimeout(() => {
             toastElement.classList.remove('visible');
-        }, 1800); // 稍微延长显示时间，体验更好
-    }, 50); // 添加一个微小的延迟，确保移除/添加class的动作被浏览器正确处理
+        }, 1800); 
+    }, 50);
 }
 
 // 设置背景粒子动画
@@ -166,19 +161,15 @@ export function setupDragToSelect(config) {
     };
     window.addEventListener('mousemove', handleAutoScroll);
 }
-// 设置加载状态的显示
+
 export function setLoading(isLoading, message = "正在加载数据...", isGlobalReset = true) {
     dom.loadingDiv.querySelector('p').textContent = message;
     dom.loadingDiv.classList.toggle('hidden', !isLoading);
-
-    // 【核心修改】通过给 body 添加/移除 class 来控制全局加载状态
     document.body.classList.toggle('is-loading', isLoading);
 
     if (isLoading && isGlobalReset) {
         dom.errorMessageDiv.classList.add('hidden');
         dom.playerDataContainer.classList.add('hidden');
-        // 【核心修改】移除下面这行，我们不再隐藏导航链接
-        // dom.navLinksContainer.classList.add('hidden'); 
         dom.beatmapSearchPage.page.classList.add('hidden');
         dom.beatmapSearchPage.resultsContainer.innerHTML = '';
     }

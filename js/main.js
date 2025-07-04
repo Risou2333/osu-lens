@@ -18,6 +18,7 @@ import { renderAllEmbeddedCharts } from './charts.js';
 import { setupAudioPlayerListeners } from './audio-player.js';
 import { createPpCalculatorControls, initializePpCalculatorMods, setupPpCalculatorListeners, openPpCalculatorForBeatmap } from './pp-calculator.js';
 import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML, createBeatmapsetCardHTML, hideAllContentSections } from './ui.js';
+import { openDownloadLink } from './utils.js';
 
 async function loadMoreRecentPlays() {
     if (appState.isFetchingRecentPlays || appState.allRecentPlaysLoaded || !currentPlayer) return;
@@ -363,7 +364,7 @@ async function handleBeatmapSearch(isLoadMore = false) {
             mode: 0,
         };
 
-        // 仅当筛选状态不是默认的“拥有排行榜”（空字符串）时，才添加categories参数
+        // 仅当筛选状态不是默认的"拥有排行榜"（空字符串）时，才添加categories参数
         if (appState.beatmapStatusFilter) {
             searchParams.categories = appState.beatmapStatusFilter;
         }
@@ -565,7 +566,7 @@ function setupEventListeners() {
             if (currentPlayer) {
                 showPage(pageId);
 
-                // 如果是首次点击“最近游玩”，则开始加载数据
+                // 如果是首次点击"最近游玩"，则开始加载数据
                 if (pageId === 'recentPlaysSection' && !recentPlaysLoaded) {
                     setRecentPlaysLoaded(true);
                     dom.recentPlaysControls.classList.remove('hidden');
@@ -643,13 +644,22 @@ function setupEventListeners() {
     });
     
     dom.downloadSelectedBtn.addEventListener('click', () => {
+        // 添加动画类
+        dom.downloadSelectedBtn.classList.add('animate-flash');
+        // 监听动画结束事件
+        dom.downloadSelectedBtn.addEventListener('animationend', () => {
+            dom.downloadSelectedBtn.classList.remove('animate-flash');
+        }, { once: true });
+
         const baseUrl = DOWNLOAD_SOURCE_INFO[appState.downloadSource].url;
         const ids = [...new Set(Array.from(dom.topPlaysDiv.querySelectorAll('.glass-card.selected')).map(c => c.dataset.beatmapsetId).filter(Boolean))];
         if (ids.length === 0) {
             showToast('请先选择要下载的谱面');
             return;
         }
-        ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
+        // 使用openDownloadLink函数代替window.open
+        ids.forEach(id => openDownloadLink(`${baseUrl}${id}`));
+        showToast(`正在下载${ids.length}个谱面...`);
     });
 
     dom.recentPassOnlyCheckbox.addEventListener('change', (e) => {
@@ -667,16 +677,34 @@ function setupEventListeners() {
     });
 
     dom.recentDownloadSelectedBtn.addEventListener('click', () => {
+        // 添加动画类
+        dom.recentDownloadSelectedBtn.classList.add('animate-flash');
+        // 监听动画结束事件
+        dom.recentDownloadSelectedBtn.addEventListener('animationend', () => {
+            dom.recentDownloadSelectedBtn.classList.remove('animate-flash');
+        }, { once: true });
+
         const baseUrl = DOWNLOAD_SOURCE_INFO[appState.downloadSource].url;
         const ids = [...new Set(Array.from(dom.recentPlaysDiv.querySelectorAll('.glass-card.selected')).map(c => c.dataset.beatmapsetId).filter(Boolean))];
         if (ids.length === 0) {
             showToast('请先选择要下载的谱面');
             return;
         }
-        ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
+        // 使用openDownloadLink函数代替window.open
+        ids.forEach(id => openDownloadLink(`${baseUrl}${id}`));
+        showToast(`正在下载${ids.length}个谱面...`);
     });
 
-    dom.refreshRecentPlaysBtn.addEventListener('click', handleRecentPlaysRefresh);
+    dom.refreshRecentPlaysBtn.addEventListener('click', () => {
+        // 添加动画类
+        dom.refreshRecentPlaysBtn.classList.add('animate-flash');
+        // 监听动画结束事件
+        dom.refreshRecentPlaysBtn.addEventListener('animationend', () => {
+            dom.refreshRecentPlaysBtn.classList.remove('animate-flash');
+        }, { once: true });
+
+        handleRecentPlaysRefresh();
+    });
 
     setupAudioPlayerListeners();
     setupPpCalculatorListeners();
@@ -693,7 +721,7 @@ function setupEventListeners() {
     });
     dom.beatmapSearchPage.queryInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            // --- 新增代码：触发“搜索”按钮的动画 ---
+            // --- 新增代码：触发"搜索"按钮的动画 ---
             const button = dom.beatmapSearchPage.searchBtn;
             button.classList.add('animate-flash');
             button.addEventListener('animationend', () => {
@@ -746,6 +774,15 @@ function setupEventListeners() {
     }, { passive: false });
 
     document.body.addEventListener('click', e => {
+        // 为所有卡片上的按钮添加点击动画效果
+        const button = e.target.closest('.download-btn, .pp-calc-btn');
+        if (button) {
+            button.classList.add('animate-flash');
+            button.addEventListener('animationend', () => {
+                button.classList.remove('animate-flash');
+            }, { once: true });
+        }
+
         const calcTrigger = e.target.closest('.card-pp-calc-trigger');
         if (!calcTrigger) return;
 
@@ -785,20 +822,27 @@ function setupEventListeners() {
         }
     });
 
-    // 为“全选”复选框添加事件监听
+    // 为"全选"复选框添加事件监听
     document.getElementById('beatmapSelectAllCheckbox').addEventListener('change', (e) => {
-        beatmapResultsContainer.querySelectorAll('.beatmap-card').forEach(card => {
+        dom.beatmapSearchPage.resultsContainer.querySelectorAll('.beatmap-card').forEach(card => {
             card.classList.toggle('selected', e.target.checked);
         });
     });
 
-    // 为“下载选中”按钮添加事件监听
+    // 为"下载选中"按钮添加事件监听
     document.getElementById('beatmapDownloadSelectedBtn').addEventListener('click', () => {
-        const baseUrl = DOWNLOAD_SOURCE_INFO[downloadSource].url;
+        // 添加动画类
+        document.getElementById('beatmapDownloadSelectedBtn').classList.add('animate-flash');
+        // 监听动画结束事件
+        document.getElementById('beatmapDownloadSelectedBtn').addEventListener('animationend', () => {
+            document.getElementById('beatmapDownloadSelectedBtn').classList.remove('animate-flash');
+        }, { once: true });
+
+        const baseUrl = DOWNLOAD_SOURCE_INFO[appState.downloadSource].url;
         
         // 从选中的卡片中提取 beatmapset ID
         const ids = [...new Set(
-            Array.from(beatmapResultsContainer.querySelectorAll('.beatmap-card.selected'))
+            Array.from(dom.beatmapSearchPage.resultsContainer.querySelectorAll('.beatmap-card.selected'))
                  .map(card => card.querySelector('.beatmap-card__actions')?.dataset.beatmapset)
                  .filter(Boolean) // 过滤掉无效数据
                  .map(json => JSON.parse(json).id)
@@ -809,14 +853,22 @@ function setupEventListeners() {
             return;
         }
         
-        // 批量打开下载链接
-        ids.forEach(id => window.open(`${baseUrl}${id}`, '_blank'));
+        // 使用openDownloadLink函数代替window.open
+        ids.forEach(id => openDownloadLink(`${baseUrl}${id}`));
+        showToast(`正在下载${ids.length}个谱面...`);
     });
 
     // --- 新增代码：当用户在玩家输入框中输入时，移除错误状态 ---
     dom.usernameInput.addEventListener('input', () => {
         dom.usernameInput.classList.remove('input-error');
     });    
+
+    // 为📎图标添加点击事件监听器，显示toast提示
+    document.querySelectorAll('.custom-tooltip-container .cursor-pointer').forEach(icon => {
+        icon.addEventListener('click', () => {
+            showToast('请允许浏览器同时打开多个窗口！');
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

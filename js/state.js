@@ -27,6 +27,7 @@ export const appState = {
     isFetchingBeatmaps: false,
     isPlayerSearchActive: false,
     beatmapStatusFilter: '',
+    downloadSource: 'nerinyan',
 };
 
 export const activeCharts = {};
@@ -49,6 +50,7 @@ export function setAccessToken(token, expiry) {
 
 export function setDownloadSource(source) {
     downloadSource = source;
+    appState.downloadSource = source;
 }
 
 export function setCurrentPlayer(player) {

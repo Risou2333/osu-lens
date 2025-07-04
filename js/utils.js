@@ -24,6 +24,20 @@ export const getPpIcon = (pp) => {
     return '➖';
 };
 
+// 在不跳转页面的情况下打开下载链接
+export function openDownloadLink(url) {
+    // 创建一个隐藏的iframe用于下载
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    
+    // 设置超时移除iframe，避免内存泄漏
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+    }, 60000); // 60秒后移除iframe
+}
+
 // 根据谱面难度星级返回对应的颜色
 export function getDifficultyColor(stars) {
     const domain = [0.1, 1.25, 2, 2.5, 3.3, 4.2, 4.9, 5.8, 6.7, 7.7, 9];
