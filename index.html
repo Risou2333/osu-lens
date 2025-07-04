@@ -238,7 +238,7 @@
                 <span class="pp-gain-icon text-xl"></span>
                 <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
             </div>
-            <button id="refreshRecentPlaysBtn" class="download-btn mr-4" title="刷新最近的成绩">🔄 刷新</button>
+            <button id="refreshRecentPlaysBtn" class="download-btn mr-4" title="刷新最近的成绩">刷新</button>
         </div>
     </div>
     <div id="recentPlaysControls" class="card p-4 mb-4 hidden">
@@ -270,6 +270,7 @@
                 <div class="flex space-x-2">
                     <input type="text" id="beatmapQueryInput" class="input-field flex-grow text-base" placeholder="输入歌曲名、作者、谱师等关键词或谱面ID...">
                     <button id="beatmapSearchBtn" class="btn-primary">搜索</button>
+                    <button id="beatmapIdentifyBtn" class="btn-primary hidden">识别</button>
                 </div>
                 
                 <div id="beatmapSearchControls" class="flex justify-between items-center w-full mt-4">
@@ -288,6 +289,9 @@
                     </div>
                     
                     <div class="flex items-center gap-2">
+                        <button id="beatmapModeToggleBtn" class="download-btn" title="切换搜索/识别模式">
+                            切换模式
+                        </button>
                         <label class="flex items-center text-sm font-medium"><input type="checkbox" id="beatmapSelectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
                         <span class="opacity-30">|</span>
                         <button id="beatmapDownloadSelectedBtn" class="download-btn">下载选中谱面</button>

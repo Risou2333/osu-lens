@@ -38,7 +38,16 @@ html { scroll-behavior: smooth; }
 body { font-family: 'Inter', sans-serif; color: var(--text-color); }
 
 /* 卡片和按钮样式 */
-.card { backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); background-color: var(--glass-ui-bg-color); border: 1px solid var(--glass-ui-border-color); border-radius: 0.75rem; box-shadow: none; transition: background-color 0.3s ease, border-color 0.3s ease; }
+.card {
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    background-color: var(--glass-ui-bg-color);
+    border: 1px solid var(--glass-ui-border-color);
+    border-radius: 0.75rem;
+    box-shadow: none;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    position: relative;
+}
 .glass-card { backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); border: 1px solid var(--glass-card-border); box-shadow: none; margin-bottom: 0.75rem; position: relative; overflow: hidden; z-index: 1; transition: border 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
 .glass-card .main-content { cursor: pointer; }
 .glass-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(var(--glass-card-overlay-color), var(--glass-card-overlay-color)), var(--bg-image-url); background-size: cover; background-position: center; z-index: -1; transition: opacity 0.3s ease; filter: blur(2px); }
