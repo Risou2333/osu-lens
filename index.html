@@ -188,7 +188,7 @@
                 <div id="topPlaysSortAndFilterControls" class="card p-4 mb-4 space-y-4 hidden">
                     <div class="flex justify-between items-center mb-2 flex-wrap gap-y-2">
                         <div class="sort-controls-row">
-                             <span class="sort-label">排序：</span>
+                             <span class="sort-label">&nbsp排序：</span>
                              <div id="sortHeaderContainer" class="sort-header-container">
                                 <div class="sort-header active" data-sort="pp">PP <span class="sort-arrow">▼</span></div>
                                 <div class="sort-header" data-sort="accuracy">ACC <span class="sort-arrow"></span></div>
@@ -200,7 +200,10 @@
                         <div class="flex items-center gap-2">
                              <label class="flex items-center text-sm font-medium"><input type="checkbox" id="selectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
                              <span class="opacity-30">|</span>
-                             <span title="请允许浏览器同时打开多个窗口！" class="cursor-help">📎</span>
+                             <div class="custom-tooltip-container">
+                                 <span class="cursor-help">📎</span>
+                                 <div class="custom-tooltip">请允许浏览器同时打开多个窗口！</div>
+                             </div>
                              <button id="downloadSelectedBtn" class="download-btn">下载选中谱面</button>
                         </div>
                     </div>
@@ -233,27 +236,31 @@
 
             <section id="recentPlaysSection" class="page-content hidden">
                 <div class="flex justify-between items-center mb-2">
+                    <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
                     <div class="flex items-center gap-4">
-                        <h3 class="section-title mb-0 border-b-0 pb-0">最近游玩</h3>
-                        <button id="refreshRecentPlaysBtn" class="download-btn" title="刷新最近的成绩">🔄 刷新</button>
-                    </div>
-                    <div id="recentPpGainDisplay" class="text-lg hidden items-center">
-                        <span class="pp-gain-icon text-xl"></span>
-                        <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
+                        <div id="recentPpGainDisplay" class="text-lg hidden items-center">
+                            <span class="pp-gain-icon text-xl"></span>
+                            <span class="font-bold" style="color: var(--stat-value-color);">+0.0pp</span>
+                        </div>
+                        <button id="refreshRecentPlaysBtn" class="download-btn mr-4" title="刷新最近的成绩">🔄 刷新</button>
                     </div>
                 </div>
+                </section>
                 <div id="recentPlaysControls" class="card p-4 mb-4 hidden">
                     <div class="flex justify-between items-center w-full">
                         <div class="flex items-center gap-4">
-                            <span class="sort-label">筛选：</span>
+                            <span class="sort-label">&nbsp筛选：</span>
                             <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentPassOnly" class="mr-1.5 accent-pink-500">仅Pass</label>
                             <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentBpOnly" class="mr-1.5 accent-pink-500">仅BP</label>
                         </div>
                         <div class="flex items-center gap-2">
                              <label class="flex items-center text-sm font-medium"><input type="checkbox" id="recentSelectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
                              <span class="opacity-30">|</span>
-                             <span title="请允许浏览器同时打开多个窗口！" class="cursor-help">📎</span>
-                             <button id="recentDownloadSelectedBtn" class="download-btn">下载选中</button>
+                             <div class="custom-tooltip-container">
+                                 <span class="cursor-help">📎</span>
+                                 <div class="custom-tooltip">请允许浏览器同时打开多个窗口！</div>
+                             </div>
+                             <button id="recentDownloadSelectedBtn" class="download-btn">下载选中谱面</button>
                         </div>
                     </div>
                 </div>
@@ -265,13 +272,42 @@
         </div>
 
         <section id="beatmapSearchPage" class="page-content hidden">
-            <h3 class="section-title">谱面搜索(WIP)</h3>
+            <h3 class="section-title">谱面搜索</h3>
+            
             <div class="card p-4 mb-4">
                 <div class="flex space-x-2">
                     <input type="text" id="beatmapQueryInput" class="input-field flex-grow text-base" placeholder="输入歌曲名、作者、谱师等关键词或谱面ID...">
                     <button id="beatmapSearchBtn" class="btn-primary">搜索</button>
                 </div>
+                
+                <div id="beatmapSearchControls" class="flex justify-between items-center w-full mt-4">
+                    <div id="beatmapStatusFilters" class="filter-group">
+                        <span class="sort-label">&nbsp状态: </span>
+                        <div class="sort-header-container">
+                            <div class="sort-header active" data-status="">拥有排行榜</div>
+                            <div class="sort-header" data-status="any">全部</div>
+                            <div class="sort-header" data-status="ranked">上架</div>
+                            <div class="sort-header" data-status="loved">社区喜爱</div>
+                            <div class="sort-header" data-status="qualified">过审</div>
+                            <div class="sort-header" data-status="pending">待定</div>
+                            <div class="sort-header" data-status="wip">制作中</div>
+                            <div class="sort-header" data-status="graveyard">坟图</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center text-sm font-medium"><input type="checkbox" id="beatmapSelectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
+                        <span class="opacity-30">|</span>
+                             <div class="custom-tooltip-container">
+                                 <span class="cursor-help">📎</span>
+                                 <div class="custom-tooltip">请允许浏览器同时打开多个窗口！</div>
+                             </div>
+                        <button id="beatmapDownloadSelectedBtn" class="download-btn">下载选中谱面</button>
+                    </div>
+                </div>
+
             </div>
+
             <div id="beatmapSearchResultsContainer" class="space-y-3 p-1">
             </div>
         </section>
