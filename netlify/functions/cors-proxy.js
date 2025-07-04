@@ -9,7 +9,7 @@ exports.handler = async function(event) {
 
   try {
     const response = await fetch(targetUrl);
-    const body = await response.text();
+    const body = await response;
     return {
       statusCode: 200,
       headers: {
