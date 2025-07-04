@@ -23,9 +23,9 @@ osu!lens 是一个用于查看玩家信息和分析PP的工具。该项目利用
 3. **线上Demo**：
    您可以通过以下链接访问线上Demo：[osu!lens Demo](https://osulens.netlify.app)
 
-## 贡献
+## 致谢
 
-欢迎对本项目进行贡献！请提交Pull Request或Issue以帮助我们改进。
+本项目部分功能基于 [rosu-pp-js](https://github.com/MaxOhn/rosu-pp-js)，该项目遵循 MIT 许可证。
 
 ## 许可证
 
