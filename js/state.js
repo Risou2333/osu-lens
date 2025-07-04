@@ -26,6 +26,7 @@ export const appState = {
     beatmapSearchCursor: null,
     isFetchingBeatmaps: false,
     isPlayerSearchActive: false,
+    beatmapSearchMode: 'search',
     beatmapStatusFilter: '',
     downloadSource: 'nerinyan',
 };

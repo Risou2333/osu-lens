@@ -248,7 +248,7 @@ async function handleRecentPlaysRefresh() {
 
     const btn = dom.refreshRecentPlaysBtn;
     btn.disabled = true;
-    btn.innerHTML = '🔄 刷新中...';
+    btn.innerHTML = '刷新中...';
 
     try {
         const existingPlayIds = new Set(recentPlaysDetails.map(d => d.playData.id));
@@ -329,7 +329,7 @@ async function handleRecentPlaysRefresh() {
         showToast(`刷新失败: ${error.message}`);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '🔄 刷新';
+        btn.innerHTML = '刷新';
     }
 }
 
@@ -415,6 +415,183 @@ async function handleBeatmapSearch(isLoadMore = false) {
         resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">搜索失败: ${error.message}</p>`;
     } finally {
         appState.isFetchingBeatmaps = false;
+    }
+}
+
+// 新增：识别谱面ID的函数
+async function handleBeatmapIdentify() {
+    const bdom = dom.beatmapSearchPage;
+    const text = String(bdom.queryInput.value).trim();
+    const resultsContainer = bdom.resultsContainer;
+    
+    if (!text) {
+        showToast("请粘贴包含谱面ID的文本");
+        return;
+    }
+    
+    // 识别所有4-8位数字，且第一位不是0
+    const idRegex = /\b[1-9]\d{3,7}\b/g;
+    const matches = text.match(idRegex) || [];
+    
+    // 去重
+    const uniqueIds = [...new Set(matches)];
+    
+    if (uniqueIds.length === 0) {
+        showToast("未找到有效的谱面ID");
+        return;
+    }
+    
+    // 自动切换到"全部"筛选器
+    const allFilter = document.querySelector('.sort-header[data-status="any"]');
+    if (allFilter && !allFilter.classList.contains('active')) {
+        document.querySelectorAll('.sort-header').forEach(h => h.classList.remove('active'));
+        allFilter.classList.add('active');
+        appState.beatmapStatusFilter = 'any';
+    }
+    
+    // 开始识别前，重置搜索状态和清空容器
+    appState.beatmapSearchCursor = null;
+    appState.isFetchingBeatmaps = true;
+    resultsContainer.className = 'beatmap-grid-container';
+    resultsContainer.innerHTML = `<div class="text-center p-4" style="grid-column: 1 / -1;"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div><p class="mt-2">正在搜索 ${uniqueIds.length} 个谱面ID...</p></div>`;
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    try {
+        resultsContainer.innerHTML = '';
+        let totalFound = 0;
+        let displayedCount = 0;
+        
+        // 获取当前状态筛选器的值
+        const statusFilter = appState.beatmapStatusFilter;
+        
+        // 逐个加载谱面
+        for (let i = 0; i < uniqueIds.length; i++) {
+            const beatmapsetId = uniqueIds[i];
+            
+            try {
+                // 直接获取谱面集信息
+                const beatmapset = await fetchV2Api(`beatmapsets/${beatmapsetId}`);
+                
+                if (beatmapset && beatmapset.id) {
+                    totalFound++;
+                    
+                    // 根据当前状态筛选器过滤结果
+                    let shouldDisplay = true;
+                    const beatmapsetStatus = (beatmapset.status || '').toLowerCase(); // 将API状态转为小写
+                    
+                    if (statusFilter && statusFilter !== 'any') {
+                        if (statusFilter === '') {
+                            // "拥有排行榜"状态下只显示上架、社区喜爱、过审和已批准的谱面
+                            shouldDisplay = ['ranked', 'loved', 'qualified', 'approved'].includes(beatmapsetStatus);
+                        } else {
+                            // 其他状态下只显示匹配当前状态的谱面
+                            shouldDisplay = beatmapsetStatus === statusFilter;
+                        }
+                    }
+                    
+                    if (shouldDisplay) {
+                        const cardHTML = createBeatmapsetCardHTML(beatmapset);
+                        resultsContainer.insertAdjacentHTML('beforeend', cardHTML);
+                        displayedCount++;
+                    }
+                }
+            } catch (error) {
+                console.log(`ID ${beatmapsetId} 搜索失败:`, error);
+                // 单个谱面获取失败不影响整体流程
+            }
+            
+            // 更新加载进度
+            if (i < uniqueIds.length - 1) {
+                const progressElem = document.createElement('div');
+                progressElem.className = 'text-center p-2';
+                progressElem.style.gridColumn = '1 / -1';
+                progressElem.innerHTML = `<p>已加载 ${i+1}/${uniqueIds.length} 个谱面ID...</p>`;
+                
+                const existingProgress = resultsContainer.querySelector('.text-center.p-2');
+                if (existingProgress) {
+                    resultsContainer.replaceChild(progressElem, existingProgress);
+                } else if (resultsContainer.children.length === 0) {
+                    resultsContainer.appendChild(progressElem);
+                }
+            }
+        }
+        
+        // 移除进度提示
+        const progressElem = resultsContainer.querySelector('.text-center.p-2');
+        if (progressElem) {
+            resultsContainer.removeChild(progressElem);
+        }
+        
+        // 显示结果摘要 (仅当未找到符合筛选条件的谱面时显示)
+        if (displayedCount === 0) {
+            resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;">未找到符合当前筛选条件的谱面。</p>';
+        } 
+    } catch (error) {
+        console.error("谱面识别失败:", error);
+        resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">识别失败: ${error.message}</p>`;
+    } finally {
+        // 识别完成后，保持beatmapSearchCursor为null，防止触发加载更多
+        appState.beatmapSearchCursor = null;
+        appState.isFetchingBeatmaps = false;
+    }
+}
+
+// 新增：切换搜索模式
+function toggleBeatmapSearchMode() {
+    const bdom = dom.beatmapSearchPage;
+    
+    // 添加动画效果
+    bdom.modeToggleBtn.classList.add('animate-flash');
+    bdom.modeToggleBtn.addEventListener('animationend', () => {
+        bdom.modeToggleBtn.classList.remove('animate-flash');
+    }, { once: true });
+    
+    // 清空输入框
+    bdom.queryInput.value = '';
+    
+    if (appState.beatmapSearchMode === 'search') {
+        // 切换到识别模式
+        appState.beatmapSearchMode = 'identify';
+        bdom.searchBtn.classList.add('hidden');
+        bdom.identifyBtn.classList.remove('hidden');
+        bdom.queryInput.placeholder = "粘贴文本以识别谱面";
+        
+        // 清空之前的搜索结果和游标
+        bdom.resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;"></p>';
+        appState.beatmapSearchCursor = null;
+        
+        // 切换到"全部"筛选器
+        const allFilter = document.querySelector('.sort-header[data-status="any"]');
+        if (allFilter && !allFilter.classList.contains('active')) {
+            document.querySelectorAll('.sort-header').forEach(h => h.classList.remove('active'));
+            allFilter.classList.add('active');
+            appState.beatmapStatusFilter = 'any';
+        }
+        
+        showToast("已切换到识别模式");
+    } else {
+        // 切换到搜索模式
+        appState.beatmapSearchMode = 'search';
+        bdom.identifyBtn.classList.add('hidden');
+        bdom.searchBtn.classList.remove('hidden');
+        bdom.queryInput.placeholder = "输入歌曲名、作者、谱师等关键词或谱面ID...";
+        
+        // 清空之前的结果
+        bdom.resultsContainer.innerHTML = '';
+        appState.beatmapSearchCursor = null;
+        
+        // 切换到"拥有排行榜"筛选器
+        const rankedFilter = document.querySelector('.sort-header[data-status=""]');
+        if (rankedFilter && !rankedFilter.classList.contains('active')) {
+            document.querySelectorAll('.sort-header').forEach(h => h.classList.remove('active'));
+            rankedFilter.classList.add('active');
+            appState.beatmapStatusFilter = '';
+        }
+
+        // 切换到搜索模式时，进行空关键词搜索
+        handleBeatmapSearch();
+        
+        showToast("已切换到搜索模式");
     }
 }
 
@@ -556,7 +733,9 @@ function setupEventListeners() {
             // 如果是谱面搜索页，则直接显示
             if (pageId === 'beatmapSearchPage') {
                 showPage(pageId);
-                if (dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) {
+                // 如果结果容器为空或没有搜索游标，且是搜索模式，则执行搜索
+                if ((dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) && 
+                    appState.beatmapSearchMode === 'search') {
                     handleBeatmapSearch();
                 }
                 return;
@@ -719,22 +898,43 @@ function setupEventListeners() {
 
         handleBeatmapSearch();
     });
+    
+    dom.beatmapSearchPage.identifyBtn.addEventListener('click', () => {
+        // 添加动画类
+        dom.beatmapSearchPage.identifyBtn.classList.add('animate-flash');
+        // 监听动画结束事件
+        dom.beatmapSearchPage.identifyBtn.addEventListener('animationend', () => {
+            dom.beatmapSearchPage.identifyBtn.classList.remove('animate-flash');
+        }, { once: true });
+
+        handleBeatmapIdentify();
+    });
+    
+    dom.beatmapSearchPage.modeToggleBtn.addEventListener('click', toggleBeatmapSearchMode);
+    
     dom.beatmapSearchPage.queryInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             // --- 新增代码：触发"搜索"按钮的动画 ---
-            const button = dom.beatmapSearchPage.searchBtn;
+            const button = appState.beatmapSearchMode === 'search' ? 
+                dom.beatmapSearchPage.searchBtn : dom.beatmapSearchPage.identifyBtn;
             button.classList.add('animate-flash');
             button.addEventListener('animationend', () => {
                 button.classList.remove('animate-flash');
             }, { once: true });
             // --- 新增代码结束 ---
             
-            handleBeatmapSearch();
+            if (appState.beatmapSearchMode === 'search') {
+                handleBeatmapSearch();
+            } else {
+                handleBeatmapIdentify();
+            }
         }
     });
 
     window.addEventListener('scroll', () => {
-        if (appState.activePage !== 'beatmapSearchPage' || appState.isFetchingBeatmaps) {
+        if (appState.activePage !== 'beatmapSearchPage' || 
+            appState.isFetchingBeatmaps || 
+            appState.beatmapSearchMode === 'identify') {
             return;
         }
 
@@ -816,9 +1016,75 @@ function setupEventListeners() {
     statusFiltersContainer.addEventListener('click', (e) => {
         const targetHeader = e.target.closest('.sort-header');
         if (targetHeader && !targetHeader.classList.contains('active')) {
+            const oldStatus = appState.beatmapStatusFilter;
             appState.beatmapStatusFilter = targetHeader.dataset.status;
             updateStatusFiltersUI();
-            handleBeatmapSearch(); // 点击后立即执行搜索
+            
+            // 根据当前模式执行不同的操作
+            if (appState.beatmapSearchMode === 'search') {
+                handleBeatmapSearch(); // 搜索模式下执行搜索
+            } else {
+                // 识别模式下，如果已经有识别结果，则重新筛选
+                const resultsContainer = dom.beatmapSearchPage.resultsContainer;
+                const beatmapCards = resultsContainer.querySelectorAll('.beatmap-card');
+                
+                if (beatmapCards.length > 0) {
+                    // 已经有识别结果，只需要筛选
+                    let displayedCount = 0;
+                    let totalCount = 0;
+                    
+                    // 隐藏所有卡片
+                    beatmapCards.forEach(card => {
+                        const actionsContainer = card.querySelector('.beatmap-card__actions');
+                        if (!actionsContainer || !actionsContainer.dataset.beatmapset) return;
+                        
+                        try {
+                            totalCount++;
+                            const beatmapset = JSON.parse(actionsContainer.dataset.beatmapset);
+                            const status = (beatmapset.status || '').toLowerCase(); // 将API状态转为小写
+                            
+                            // 根据筛选条件决定是否显示
+                            let shouldDisplay = true;
+                            const statusFilter = appState.beatmapStatusFilter;
+                            
+                            if (statusFilter && statusFilter !== 'any') {
+                                if (statusFilter === '') {
+                                    // "拥有排行榜"状态下只显示上架、社区喜爱、过审和已批准的谱面
+                                    shouldDisplay = ['ranked', 'loved', 'qualified', 'approved'].includes(status);
+                                } else {
+                                    // 其他状态下只显示匹配当前状态的谱面
+                                    shouldDisplay = status === statusFilter;
+                                }
+                            }
+                            
+                            card.style.display = shouldDisplay ? '' : 'none';
+                            if (shouldDisplay) displayedCount++;
+                        } catch (error) {
+                            console.error('筛选谱面时出错:', error);
+                        }
+                    });
+                    
+                    // 更新摘要信息
+                    const existingSummary = resultsContainer.querySelector('p.opacity-70.text-center.p-4');
+                    if (existingSummary) resultsContainer.removeChild(existingSummary);
+                    
+                    const summaryElem = document.createElement('p');
+                    summaryElem.className = 'opacity-70 text-center p-4';
+                    summaryElem.style.gridColumn = '1 / -1';
+                    
+                    if (displayedCount === 0) {
+                        summaryElem.textContent = '未找到符合当前筛选条件的谱面。';
+                    } else {
+                        summaryElem.textContent = `共找到 ${displayedCount} 个谱面`;
+                    }
+                    
+                    resultsContainer.appendChild(summaryElem);
+                    showToast(`已筛选谱面，显示 ${displayedCount}/${totalCount} 个谱面`);
+                } else if (dom.beatmapSearchPage.queryInput.value.trim()) {
+                    // 输入框有内容但没有结果，重新执行识别
+                    handleBeatmapIdentify();
+                }
+            }
         }
     });
 

@@ -233,6 +233,7 @@ export function showKeyManagementUI() {
 
 // 创建单个谱面搜索结果的HTML卡片
 export function createBeatmapsetCardHTML(beatmapset) {
+    // console.log('DEBUG: createBeatmapsetCardHTML - Incoming beatmapset:', beatmapset, 'Status:', beatmapset.status);
     const osuStandardDiffs = (beatmapset.beatmaps || []).filter(b => b.mode_int === 0).sort((a, b) => a.difficulty_rating - b.difficulty_rating);
     if (osuStandardDiffs.length === 0) return '';
     const minDifficulty = 0, maxDifficulty = 12;
@@ -240,7 +241,17 @@ export function createBeatmapsetCardHTML(beatmapset) {
     const gradientStops = [0.1, 1.25, 2, 2.5, 3.3, 4.2, 4.9, 5.8, 6.7, 7.7, 9, 10.5, 12].map(star =>
         `${getDifficultyColor(star)} ${getPosition(star)}%`).join(', ');
     const gradientStyle = `background: linear-gradient(to right, ${gradientStops});`;
-    const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
+    
+    // 原始 JSON 字符串，包含所有必要信息
+    const rawBeatmapsetJson = JSON.stringify({id: beatmapset.id, title: beatmapset.title, artist: beatmapset.artist, creator: beatmapset.creator, status: beatmapset.status});
+
+    // 对原始 JSON 字符串进行 HTML 实体转义
+    // 优先转义 &，然后是 " 和 '
+    const escapedBeatmapsetJson = rawBeatmapsetJson
+        .replace(/&/g, '&amp;') // 先转义 & 符号
+        .replace(/'/g, '&apos;') // 再转义单引号
+        .replace(/"/g, '&quot;'); // 最后转义双引号
+
     const difficultyLinesHTML = osuStandardDiffs.map((b, index) => {
         const position = getPosition(b.difficulty_rating);
         const color = getDifficultyColor(b.difficulty_rating);
@@ -285,7 +296,12 @@ export function createBeatmapsetCardHTML(beatmapset) {
                 <div class="beatmap-card__artist">${beatmapset.artist}</div>
                 <div class="beatmap-card__creator">谱师: ${beatmapset.creator}</div>
                 <span class="${statusClass}">${status}</span>
-                <div class="beatmap-card__actions" data-beatmapset='${JSON.stringify({id: beatmapset.id, title: beatmapset.title, artist: beatmapset.artist, creator: beatmapset.creator})}'>
+                <div class="beatmap-card__actions" data-beatmapset='${escapedBeatmapsetJson}'>
+                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-title="${beatmapset.title.replace(/"/g, '&quot;')}" data-artist="${beatmapset.artist.replace(/"/g, '&quot;')}" title="试听谱面">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M13.531 1.4a0.625 0.625 0 0 0 -0.5 -0.144l-8.125 1.25A0.625 0.625 0 0 0 4.375 3.125v6.469a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 5.625 11.563V6.787l6.875 -1.056v2.612a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 13.75 10.313V1.875a0.625 0.625 0 0 0 -0.219 -0.475M3.438 12.5a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938m8.125 -1.25a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938M12.5 4.462l-6.875 1.056v-1.875l6.875 -1.037Z"/>
+                        </svg>
+                    </button>
                     <button class="download-btn" data-download-url="${downloadUrl}" title="下载谱面">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
                     </button>

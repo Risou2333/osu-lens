@@ -60,6 +60,8 @@ export const dom = {
         page: document.getElementById('beatmapSearchPage'),
         queryInput: document.getElementById('beatmapQueryInput'),
         searchBtn: document.getElementById('beatmapSearchBtn'),
+        identifyBtn: document.getElementById('beatmapIdentifyBtn'),
+        modeToggleBtn: document.getElementById('beatmapModeToggleBtn'),
         resultsContainer: document.getElementById('beatmapSearchResultsContainer'),
     },    
     playerInfo: {
