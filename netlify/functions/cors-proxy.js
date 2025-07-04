@@ -1,59 +1,49 @@
-const fetch = require('node-fetch');
+const fetch = require('node-fetch'); // 假设 Netlify 函数环境已支持 node-fetch
 
 exports.handler = async function(event) {
   const targetUrl = event.queryStringParameters.url;
+
+  // 处理代理请求中缺少 URL 参数的情况
   if (!targetUrl) {
     return {
       statusCode: 400,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json', // 始终以 JSON 格式返回代理错误
+        'Content-Type': 'application/json', // 代理自身的错误响应使用 JSON 格式
       },
-      body: JSON.stringify({ error: 'Missing url parameter' }),
+      body: JSON.stringify({ message: 'Error: Missing url parameter in proxy request' }),
     };
   }
 
   try {
-    const response = await fetch(targetUrl);
-    const contentType = response.headers.get('content-type') || 'text/plain';
-    let bodyContent;
+    const response = await fetch(targetUrl); // 从目标 URL 获取内容
 
-    // 尝试将响应体解析为 JSON，如果失败或不是 JSON 类型，则解析为文本。
-    if (contentType.includes('application/json')) {
-      try {
-        bodyContent = await response.json();
-      } catch (e) {
-        // 如果解析 JSON 失败，回退到文本
-        bodyContent = await response.text();
-      }
-    } else {
-      bodyContent = await response.text();
-    }
+    // 将响应体读取为文本。这对于 JSON、HTML 和纯文本文件（如 .osu 文件）都适用。
+    const responseBody = await response.text();
 
-    // 代理始终返回一个 JSON 对象，其中包含原始响应的详细信息
+    // 创建一个新的头部对象，以添加 CORS 头并保留原始头部
+    const headers = {};
+    response.headers.forEach((value, name) => {
+      headers[name] = value;
+    });
+    headers['Access-Control-Allow-Origin'] = '*'; // 添加 CORS 头部
+
+    // 透明地返回获取到的内容，包括原始状态码和头部
     return {
-      statusCode: 200, // 代理本身成功，返回 200 OK
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json', // 代理的响应始终是 JSON 格式
-      },
-      body: JSON.stringify({
-        status: response.status,       // 原始 HTTP 状态码
-        statusText: response.statusText, // 原始 HTTP 状态文本
-        headers: Object.fromEntries(response.headers.entries()), // 原始响应头
-        body: bodyContent,             // 原始响应体内容
-        contentType: contentType       // 原始 Content-Type
-      }),
+      statusCode: response.status,
+      headers: headers, // 转发原始头部并包含 CORS 头部
+      body: responseBody, // 转发实际的响应体内容
     };
   } catch (error) {
-    console.error('Proxy fetch error:', error);
+    // 捕获代理在执行 fetch 操作时发生的内部错误
+    console.error('Proxy internal fetch error:', error);
     return {
       statusCode: 500,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json', // 代理自身的内部错误响应使用 JSON 格式
       },
-      body: JSON.stringify({ error: 'Proxy could not fetch target URL: ' + error.message }),
+      body: JSON.stringify({ message: 'Proxy internal error: Could not reach target URL. ' + error.message }),
     };
   }
 };
