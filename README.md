@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-osu!lens 是一个用于查看玩家信息和分析PP（Performance Points）的工具。该项目利用了 [rosu-pp-js](https://github.com/MaxOhn/rosu-pp-js) 库来进行PP计算，支持所有osu!游戏模式。
+osu!lens 是一个用于查看玩家信息和分析PP的工具。该项目利用了 [rosu-pp-js](https://github.com/MaxOhn/rosu-pp-js) 库来进行PP计算，支持所有osu!游戏模式。
 
 ## 功能特性
 
