@@ -2,3 +2,8 @@
   for = "/*.wasm"
   [headers.values]
     Content-Type = "application/wasm"
+[[redirects]]
+  from = "/proxy/*"
+  to = "https://example.com/:splat"
+  status = 200
+  force = true
