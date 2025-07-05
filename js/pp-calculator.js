@@ -204,7 +204,7 @@ async function openPpCalculator(playData, beatmapData, beatmapsetData) {
         if (calculatorState.osuFileCache.has(beatmapData.id)) {
             osuFileContent = calculatorState.osuFileCache.get(beatmapData.id);
         } else {
-            const response = await fetch(`${CORS_PROXY_URL}https://osu.ppy.sh/osu/${beatmapData.id}`);
+            const response = await fetch(`${CORS_PROXY_URL}${encodeURIComponent(`https://osu.ppy.sh/osu/${beatmapData.id}`)}`);
             if (!response.ok) throw new Error(`获取谱面失败 (status: ${response.status})`);
             osuFileContent = await response.text();
             calculatorState.osuFileCache.set(beatmapData.id, osuFileContent);
