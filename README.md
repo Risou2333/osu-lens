@@ -12,8 +12,8 @@ osu!lens 是一个用于查看玩家信息和分析PP的工具。该项目利用
 
 ## 使用方法
 
-1. **自行部署**
-   
+1. **自行部署**:
+   部署到Netlify，或自行添加代理/后端解决CORS问题
 2. **线上Demo**：
    您可以通过以下链接访问线上Demo：[osu!lens Demo](https://osulens.netlify.app)
 
