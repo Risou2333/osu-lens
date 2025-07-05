@@ -12,15 +12,9 @@ osu!lens 是一个用于查看玩家信息和分析PP的工具。该项目利用
 
 ## 使用方法
 
-1. **安装依赖**：
-   ```bash
-   npm install 
-   ```
-
-2. **运行项目**：
-   打开`index.html`文件即可在浏览器中查看。
-
-3. **线上Demo**：
+1. **自行部署**：
+   
+2. **线上Demo**：
    您可以通过以下链接访问线上Demo：[osu!lens Demo](https://osulens.netlify.app)
 
 ## 致谢
