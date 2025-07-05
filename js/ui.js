@@ -31,7 +31,10 @@ export function renderPlayerInfo(player) {
 export function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpInRecent = false) {
     if (!play || !beatmap || !beatmapset) return '';
     const rank = play.rank.toUpperCase();
-    const songTitle = `${beatmapset.artist} - ${beatmapset.title}`;
+    const useUnicode = appState.displayUnicode;
+    const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
+    const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title;
+    const songTitle = `${artist} - ${title}`;
     const isFc = play.perfect && play.statistics.count_miss === 0;
     const ppValue = parseFloat(play.pp) || 0;
     const isTopPlay = type === 'top' || isBpInRecent;
@@ -51,7 +54,7 @@ export function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpI
     const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
     return `
         <div id="${cardId}" class="glass-card p-2 flex items-stretch space-x-3 ${extraClasses}" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
-            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-title="${beatmapset.title.replace(/"/g, '&quot;')}" data-artist="${beatmapset.artist.replace(/"/g, '&quot;')}">
+            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-title="${title.replace(/"/g, '&quot;')}" data-artist="${artist.replace(/"/g, '&quot;')}">
                 <img src="${beatmapset.covers.cover}" alt="谱面封面" class="beatmap-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x70/2a2a4e/e0e0e0?text=无封面';">
                 ${isTopPlay ? `<div class="bp-indicator">BP ${index + 1}</div>` : ''}
             </div>
@@ -233,7 +236,9 @@ export function showKeyManagementUI() {
 
 // 创建单个谱面搜索结果的HTML卡片
 export function createBeatmapsetCardHTML(beatmapset) {
-    // console.log('DEBUG: createBeatmapsetCardHTML - Incoming beatmapset:', beatmapset, 'Status:', beatmapset.status);
+    const useUnicode = appState.displayUnicode;
+    const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
+    const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title; 
     const osuStandardDiffs = (beatmapset.beatmaps || []).filter(b => b.mode_int === 0).sort((a, b) => a.difficulty_rating - b.difficulty_rating);
     if (osuStandardDiffs.length === 0) return '';
     const minDifficulty = 0, maxDifficulty = 12;
@@ -243,7 +248,15 @@ export function createBeatmapsetCardHTML(beatmapset) {
     const gradientStyle = `background: linear-gradient(to right, ${gradientStops});`;
     
     // 原始 JSON 字符串，包含所有必要信息
-    const rawBeatmapsetJson = JSON.stringify({id: beatmapset.id, title: beatmapset.title, artist: beatmapset.artist, creator: beatmapset.creator, status: beatmapset.status});
+    const rawBeatmapsetJson = JSON.stringify({
+        id: beatmapset.id, 
+        title: beatmapset.title, 
+        artist: beatmapset.artist, 
+        creator: beatmapset.creator, 
+        status: beatmapset.status,
+        title_unicode: beatmapset.title_unicode,
+        artist_unicode: beatmapset.artist_unicode
+    });
 
     // 对原始 JSON 字符串进行 HTML 实体转义
     // 优先转义 &，然后是 " 和 '
@@ -288,16 +301,16 @@ export function createBeatmapsetCardHTML(beatmapset) {
     const playCount = formatNumber(beatmapset.play_count);
     const favouriteCount = formatNumber(beatmapset.favourite_count);
     const downloadUrl = `${DOWNLOAD_SOURCE_INFO[downloadSource].url}${beatmapset.id}`;
-    const songTitle = `${beatmapset.artist} - ${beatmapset.title}`;
+    const songTitle = `${artist} - ${title}`;
     return `
         <div class="beatmap-card">
             <div class="beatmap-card__header" style="background-image: url('${beatmapset.covers.card}')">
-                <div class="beatmap-card__title" title="${songTitle}">${beatmapset.title}</div>
-                <div class="beatmap-card__artist">${beatmapset.artist}</div>
+                <div class="beatmap-card__title" title="${songTitle}">${title}</div>
+                <div class="beatmap-card__artist">${artist}</div>
                 <div class="beatmap-card__creator">谱师: ${beatmapset.creator}</div>
                 <span class="${statusClass}">${status}</span>
                 <div class="beatmap-card__actions" data-beatmapset='${escapedBeatmapsetJson}'>
-                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-title="${beatmapset.title.replace(/"/g, '&quot;')}" data-artist="${beatmapset.artist.replace(/"/g, '&quot;')}" title="试听谱面">
+                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-title="${title.replace(/"/g, '&quot;')}" data-artist="${artist.replace(/"/g, '&quot;')}" title="试听谱面">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M13.531 1.4a0.625 0.625 0 0 0 -0.5 -0.144l-8.125 1.25A0.625 0.625 0 0 0 4.375 3.125v6.469a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 5.625 11.563V6.787l6.875 -1.056v2.612a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 13.75 10.313V1.875a0.625 0.625 0 0 0 -0.219 -0.475M3.438 12.5a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938m8.125 -1.25a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938M12.5 4.462l-6.875 1.056v-1.875l6.875 -1.037Z"/>
                         </svg>

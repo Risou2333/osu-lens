@@ -681,6 +681,23 @@ function setupEventListeners() {
         showToast(`已切换下载源至: ${DOWNLOAD_SOURCE_INFO[newSource].name}`);
     });
 
+    dom.languageToggleBtn.addEventListener('click', () => {
+        appState.displayUnicode = !appState.displayUnicode;
+        dom.languageToggleBtn.textContent = appState.displayUnicode ? 'あ' : 'Aa';
+        showToast(`已切换显示语言`);
+
+        // 重新渲染所有可见的列表
+        if (dom.topPlaysDiv.innerHTML !== '' && !dom.topPlaysSection.classList.contains('hidden')) {
+            renderFilteredAndSortedTopPlays();
+        }
+        if (dom.recentPlaysDiv.innerHTML !== '' && !dom.recentPlaysSection.classList.contains('hidden')) {
+            renderFilteredRecentPlays();
+        }
+        if (dom.beatmapSearchPage.resultsContainer.innerHTML !== '' && !dom.beatmapSearchPage.page.classList.contains('hidden')) {
+            rerenderBeatmapCardsWithNewLanguage();
+        }
+    });
+
     dom.changeKeyBtn.addEventListener('click', () => {
         setAccessToken(null, 0);
         localStorage.removeItem('osuClientId');
@@ -1136,6 +1153,38 @@ function setupEventListeners() {
     });
 }
 
+function rerenderBeatmapCardsWithNewLanguage() {
+    dom.beatmapSearchPage.resultsContainer.querySelectorAll('.beatmap-card').forEach(card => {
+        const actionsContainer = card.querySelector('.beatmap-card__actions');
+        if (!actionsContainer || !actionsContainer.dataset.beatmapset) return;
+
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = actionsContainer.dataset.beatmapset;
+            const beatmapset = JSON.parse(tempDiv.textContent);
+
+            const titleEl = card.querySelector('.beatmap-card__title');
+            const artistEl = card.querySelector('.beatmap-card__artist');
+            const listenBtn = card.querySelector('.beatmap-listen-btn');
+
+            if (!titleEl || !artistEl || !listenBtn) return;
+
+            const useUnicode = appState.displayUnicode;
+            const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
+            const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title;
+            const songTitle = `${artist} - ${title}`;
+
+            titleEl.textContent = title;
+            titleEl.title = songTitle;
+            artistEl.textContent = artist;
+            listenBtn.dataset.title = title.replace(/"/g, '&quot;');
+            listenBtn.dataset.artist = artist.replace(/"/g, '&quot;');
+        } catch (e) {
+            console.error("Failed to re-render beatmap card for language switch", e);
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         await init('./rosu_pp_js/rosu_pp_js_bg.wasm');
@@ -1162,3 +1211,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         cardSelector: '.beatmap-card' // 指定要选择的卡片类名
     });
 });
+

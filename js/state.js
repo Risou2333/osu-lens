@@ -29,6 +29,7 @@ export const appState = {
     beatmapSearchMode: 'search',
     beatmapStatusFilter: '',
     downloadSource: 'nerinyan',
+    displayUnicode: false,
 };
 
 export const activeCharts = {};
