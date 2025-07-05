@@ -470,23 +470,29 @@ async function handleBeatmapIdentify() {
                 const result = await searchBeatmapsets({ keywords: beatmapsetId, categories:'any'});
                 
                 if (result && result.beatmapsets && result.beatmapsets.length > 0) {
-                    const beatmapset = result.beatmapsets[0];
+                    for (const beatmapset of result.beatmapsets) {
+                        
+                        // 如果这个谱面集已经显示过了，就跳过，避免重复
+                        if (displayedBeatmapsetIds.has(beatmapset.id)) {
+                            continue;
+                        }
                     
-                    // 2. 在处理前检查是否重复
-                    if (displayedBeatmapsetIds.has(beatmapset.id)) {
-                        continue; // 如果已显示，则跳过
-                    }
+                        // 2. 在处理前检查是否重复
+                        if (displayedBeatmapsetIds.has(beatmapset.id)) {
+                            continue; // 如果已显示，则跳过
+                        }
 
-                    totalFound++;
-                    
-                    let shouldDisplay = true;
-                    // ... (筛选逻辑不变)
+                        totalFound++;
+                        
+                        let shouldDisplay = true;
+                        // ... (筛选逻辑不变)
 
-                    if (shouldDisplay) {
-                        const cardHTML = createBeatmapsetCardHTML(beatmapset);
-                        resultsContainer.insertAdjacentHTML('beforeend', cardHTML);
-                        displayedCount++;
-                        displayedBeatmapsetIds.add(beatmapset.id); // 4. 添加到记录中
+                        if (shouldDisplay) {
+                            const cardHTML = createBeatmapsetCardHTML(beatmapset);
+                            resultsContainer.insertAdjacentHTML('beforeend', cardHTML);
+                            displayedCount++;
+                            displayedBeatmapsetIds.add(beatmapset.id); // 4. 添加到记录中
+                        }
                     }
                 }
             } catch (error) {
