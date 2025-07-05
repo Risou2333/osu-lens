@@ -14,7 +14,7 @@ osu!lens 是一个用于查看玩家信息和分析PP的工具。该项目利用
 
 1. **安装依赖**：
    ```bash
-   npm install
+   npm install node-fetch
    ```
 
 2. **运行项目**：
