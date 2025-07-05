@@ -54,16 +54,16 @@ export function createPlayCardHTML(play, beatmap, beatmapset, type, index, isBpI
     const beatmapsetJson = JSON.stringify(beatmapset).replace(/'/g, "&apos;");
     return `
         <div id="${cardId}" class="glass-card p-2 flex items-stretch space-x-3 ${extraClasses}" style="--bg-image-url: url('${beatmapset.covers.card}')" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}">
-            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-title="${title.replace(/"/g, '&quot;')}" data-artist="${artist.replace(/"/g, '&quot;')}">
+            <div class="beatmap-cover-container" data-beatmapset-id="${beatmap.beatmapset_id || beatmapset.id}" data-beatmapset='${beatmapsetJson}'>
                 <img src="${beatmapset.covers.cover}" alt="谱面封面" class="beatmap-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x70/2a2a4e/e0e0e0?text=无封面';">
                 ${isTopPlay ? `<div class="bp-indicator">BP ${index + 1}</div>` : ''}
             </div>
             <div class="flex-grow min-w-0 main-content py-1">
                 <h4 class="text-base font-semibold leading-tight" style="color: var(--primary-color);"><a href="https://osu.ppy.sh/b/${beatmap.id}" target="_blank" rel="noopener noreferrer" class="beatmap-title-link">${songTitle} <span class="opacity-70 text-sm">[${beatmap.version}]</span></a></h4>
-                <p class="text-xs opacity-70 mt-1.5" title="★${beatmap.difficulty_rating.toFixed(2)} | ${Math.round(beatmap.bpm)}bpm | CS${beatmap.cs.toFixed(1)} AR${beatmap.ar.toFixed(1)} OD${beatmap.accuracy.toFixed(1)} HP${beatmap.drain.toFixed(1)}"><span class="font-bold">★${beatmap.difficulty_rating.toFixed(2)}</span> | ${Math.round(beatmap.bpm)}bpm | CS${beatmap.cs.toFixed(1)} AR${beatmap.ar.toFixed(1)} OD${beatmap.accuracy.toFixed(1)} HP${beatmap.drain.toFixed(1)}</p>
+                <p class="text-xs opacity-70 mt-1.5" </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs mt-2 opacity-80">
                     <div>
-                        <p>作者: <span class="stat-value-secondary">${beatmapset.creator}</span></p>
+                        <p>谱师: <span class="stat-value-secondary">${beatmapset.creator}</span></p>
                         <p>时长: <span class="stat-value-secondary">${formatDuration(beatmap.total_length)}</span></p>
                         <p>收藏: <span class="stat-value-secondary">${formatNumber(beatmapset.favourite_count)}</span> | 游玩: <span class="stat-value-secondary">${formatNumber(beatmap.playcount)}</span></p>
                         <p>圈数: <span class="stat-value-secondary">${beatmap.count_circles}</span> | 滑条: <span class="stat-value-secondary">${beatmap.count_sliders}</span> | 转盘: <span class="stat-value-secondary">${beatmap.count_spinners}</span></p>
@@ -305,12 +305,14 @@ export function createBeatmapsetCardHTML(beatmapset) {
     return `
         <div class="beatmap-card">
             <div class="beatmap-card__header" style="background-image: url('${beatmapset.covers.card}')">
-                <div class="beatmap-card__title" title="${songTitle}">${title}</div>
+                <div class="beatmap-card__title">
+                    <a href="https://osu.ppy.sh/beatmapsets/${beatmapset.id}" target="_blank" rel="noopener noreferrer" style="color: var(--primary-color); text-decoration: none;">${title}</a>
+                </div>
                 <div class="beatmap-card__artist">${artist}</div>
                 <div class="beatmap-card__creator">谱师: ${beatmapset.creator}</div>
                 <span class="${statusClass}">${status}</span>
                 <div class="beatmap-card__actions" data-beatmapset='${escapedBeatmapsetJson}'>
-                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-title="${title.replace(/"/g, '&quot;')}" data-artist="${artist.replace(/"/g, '&quot;')}" title="试听谱面">
+                    <button class="download-btn beatmap-listen-btn" data-beatmapset-id="${beatmapset.id}" data-beatmapset='${escapedBeatmapsetJson}' title="试听谱面">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M13.531 1.4a0.625 0.625 0 0 0 -0.5 -0.144l-8.125 1.25A0.625 0.625 0 0 0 4.375 3.125v6.469a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 5.625 11.563V6.787l6.875 -1.056v2.612a2.125 2.125 0 0 0 -0.938 -0.219A2.188 2.188 0 1 0 13.75 10.313V1.875a0.625 0.625 0 0 0 -0.219 -0.475M3.438 12.5a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938m8.125 -1.25a0.938 0.938 0 1 1 0.938 -0.938 0.938 0.938 0 0 1 -0.938 0.938M12.5 4.462l-6.875 1.056v-1.875l6.875 -1.037Z"/>
                         </svg>

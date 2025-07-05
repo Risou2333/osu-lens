@@ -696,6 +696,26 @@ function setupEventListeners() {
         if (dom.beatmapSearchPage.resultsContainer.innerHTML !== '' && !dom.beatmapSearchPage.page.classList.contains('hidden')) {
             rerenderBeatmapCardsWithNewLanguage();
         }
+        if (!dom.ppCalculator.modal.classList.contains('hidden') && calculatorState.currentBeatmapsetData) {
+            const { title } = dom.ppCalculator;
+            const beatmapsetData = calculatorState.currentBeatmapsetData;
+            const beatmapData = calculatorState.currentBeatmapData;
+
+            const useUnicode = appState.displayUnicode;
+            const artist = useUnicode && beatmapsetData.artist_unicode ? beatmapsetData.artist_unicode : beatmapsetData.artist;
+            const song_title = useUnicode && beatmapsetData.title_unicode ? beatmapsetData.title_unicode : beatmapsetData.title;
+
+            title.textContent = `${artist} - ${song_title} [${beatmapData.version}]`;
+        } 
+        if (appState.currentlyPlaying && !dom.player.container.classList.contains('hidden')) {
+            const beatmapset = appState.currentlyPlaying;
+            const useUnicode = appState.displayUnicode;
+            const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
+            const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title;
+            
+            dom.player.infoText.innerHTML = `<strong>${artist}</strong> - ${title}`;
+            dom.player.info.title = `${artist} - ${title}`;
+        }   
     });
 
     dom.changeKeyBtn.addEventListener('click', () => {
@@ -1159,26 +1179,36 @@ function rerenderBeatmapCardsWithNewLanguage() {
         if (!actionsContainer || !actionsContainer.dataset.beatmapset) return;
 
         try {
+            // 解析存储在 data-beatmapset 属性中的谱面信息
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = actionsContainer.dataset.beatmapset;
             const beatmapset = JSON.parse(tempDiv.textContent);
 
-            const titleEl = card.querySelector('.beatmap-card__title');
+            // 精确地找到标题的 <a> 标签和艺术家的 <div>
+            const titleLink = card.querySelector('.beatmap-card__title a');
             const artistEl = card.querySelector('.beatmap-card__artist');
             const listenBtn = card.querySelector('.beatmap-listen-btn');
 
-            if (!titleEl || !artistEl || !listenBtn) return;
+            if (!titleLink || !artistEl || !listenBtn) return;
 
+            // 根据当前语言状态决定要显示的艺术家和标题
             const useUnicode = appState.displayUnicode;
             const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
             const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title;
-            const songTitle = `${artist} - ${title}`;
 
-            titleEl.textContent = title;
-            titleEl.title = songTitle;
+            // ★ 核心修复 ★
+            // 1. 只更新 <a> 标签内部的文字，而不是整个父元素
+            titleLink.textContent = title; 
+
+            // 2. 只更新艺术家元素的文字
             artistEl.textContent = artist;
+
+            // 3. 更新试听按钮的 data 属性，以确保播放器信息正确
             listenBtn.dataset.title = title.replace(/"/g, '&quot;');
             listenBtn.dataset.artist = artist.replace(/"/g, '&quot;');
+
+            // 注意：我们不再操作 titleLink 的父元素，也就不再会错误地添加 title 提示框
+
         } catch (e) {
             console.error("Failed to re-render beatmap card for language switch", e);
         }

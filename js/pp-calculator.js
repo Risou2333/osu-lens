@@ -3,7 +3,7 @@
 // PP 计算器核心逻辑
 import init, * as rosu from '../../rosu_pp_js/rosu_pp_js.js';
 import { dom } from './dom.js';
-import { calculatorState } from './state.js';
+import { appState, calculatorState } from './state.js';
 import { MODS_ENUM, CORS_PROXY_URL } from './config.js';
 
 // 创建 PP 计算器的所有控制滑块和输入框
@@ -195,7 +195,10 @@ export async function openPpCalculatorForBeatmap(beatmapData, beatmapsetData) {
 
 async function openPpCalculator(playData, beatmapData, beatmapsetData) {
     const { modal, status, content, title } = dom.ppCalculator;
-    title.textContent = `${beatmapsetData.artist} - ${beatmapsetData.title} [${beatmapData.version}]`;
+    const useUnicode = appState.displayUnicode;
+    const artist = useUnicode && beatmapsetData.artist_unicode ? beatmapsetData.artist_unicode : beatmapsetData.artist;
+    const song_title = useUnicode && beatmapsetData.title_unicode ? beatmapsetData.title_unicode : beatmapsetData.title;
+    title.textContent = `${artist} - ${song_title} [${beatmapData.version}]`;
     modal.classList.remove('hidden');
     content.classList.add('hidden');
     status.innerHTML = `<div class="pp-calc-loader"></div><p class="ml-2">正在获取 .osu 文件...</p>`;
@@ -213,6 +216,7 @@ async function openPpCalculator(playData, beatmapData, beatmapsetData) {
         if (calculatorState.currentMap) calculatorState.currentMap.free();
         calculatorState.currentMap = new rosu.Beatmap(osuFileContent);
         calculatorState.currentBeatmapData = beatmapData;
+        calculatorState.currentBeatmapsetData = beatmapsetData;
         calculatorState.totalObjects = calculatorState.currentMap.nObjects;
         prefillCalculator(playData);
         await updatePpPerformance();

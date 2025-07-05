@@ -30,6 +30,7 @@ export const appState = {
     beatmapStatusFilter: '',
     downloadSource: 'nerinyan',
     displayUnicode: false,
+    currentlyPlaying: null,
 };
 
 export const activeCharts = {};
@@ -37,6 +38,7 @@ export const activeCharts = {};
 export const calculatorState = {
     currentMap: null,
     currentBeatmapData: null,
+    currentBeatmapsetData: null,
     currentDiffAttrs: null,
     totalObjects: 0,
     isAdvancedMode: true,
