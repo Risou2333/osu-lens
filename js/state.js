@@ -29,7 +29,7 @@ export const appState = {
     beatmapSearchMode: 'search',
     beatmapStatusFilter: '',
     downloadSource: 'nerinyan',
-    displayUnicode: false,
+    displayUnicode: true,
     currentlyPlaying: null,
 };
 

@@ -1240,5 +1240,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectAllCheckbox: document.getElementById('beatmapSelectAllCheckbox'),
         cardSelector: '.beatmap-card' // 指定要选择的卡片类名
     });
+
+
+    const backToTopBtn = document.getElementById('backToTopBtn');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            backToTopBtn.classList.add('show');
+        } else {
+            backToTopBtn.classList.remove('show');
+        }
+    });
+
+    backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth' 
+        });
+    });
 });
 
