@@ -1,5 +1,5 @@
-[build]
-  functions = "netlify/functions" # 明确指定 Netlify Functions 的目录
+[functions]
+  directory = "netlify/functions"
 
 [[headers]]
   for = "/*.wasm"
