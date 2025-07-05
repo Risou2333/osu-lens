@@ -1,0 +1,8 @@
+{
+  "name": "osu-lens",
+  "version": "1.0.0",
+  "description": "osu!lens with Netlify proxy",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
