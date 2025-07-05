@@ -10,6 +10,13 @@
     <script src="https://fastly.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
+
+<button id="backToTopBtn" class="back-to-top-button" title="回到顶部">
+ <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+  <path fill-rule="evenodd" d="M12 20a.75.75 0 0 1-.75-.75V6.22l-3.22 3.22a.75.75 0 1 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 1 1-1.06 1.06l-3.22-3.22V19.25a.75.75 0 0 1-.75.75Z" clip-rule="evenodd" />
+ </svg>
+</button>
+
 <body class="min-h-screen flex flex-col items-center justify-start">
     <div id="theme-background"></div>
     <canvas id="background-animation-canvas"></canvas>
@@ -30,7 +37,7 @@
                     <a data-page="beatmapSearchPage" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🎵 谱面搜索</a>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="languageToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors h-10 w-10 flex items-center justify-center text-lg font-semibold" title="切换显示语言">Aa</button>
+                    <button id="languageToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors h-10 w-10 flex items-center justify-center text-lg font-semibold" title="切换显示语言">あ</button>
                     <button id="sourceToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors" title="切换下载源">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -267,13 +274,17 @@
         </div>
 
         <section id="beatmapSearchPage" class="page-content hidden">
-            <h3 class="section-title">谱面搜索</h3>
-            
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="section-title">谱面搜索</h3>
+                <button id="beatmapModeToggleBtn" class="download-btn mr-4" title="切换搜索/识别模式">
+                    切换模式
+                </button>
+            </div>             
             <div class="card p-4 mb-4">
                 <div class="flex space-x-2">
                     <input type="text" id="beatmapQueryInput" class="input-field flex-grow text-base" placeholder="输入歌曲名、作者、谱师等关键词或谱面ID...">
                     <button id="beatmapSearchBtn" class="btn-primary">搜索</button>
-                    <button id="beatmapIdentifyBtn" class="btn-primary hidden">识别</button>
+                    <button id="beatmapIdentifyBtn" class="btn-primary hidden">识别</button>              
                 </div>
                 
                 <div id="beatmapSearchControls" class="flex justify-between items-center w-full mt-4">
@@ -292,9 +303,6 @@
                     </div>
                     
                     <div class="flex items-center gap-2">
-                        <button id="beatmapModeToggleBtn" class="download-btn" title="切换搜索/识别模式">
-                            切换模式
-                        </button>
                         <label class="flex items-center text-sm font-medium"><input type="checkbox" id="beatmapSelectAllCheckbox" class="mr-1.5 accent-pink-500">全选</label>
                         <span class="opacity-30">|</span>
                         <button id="beatmapDownloadSelectedBtn" class="download-btn">下载选中谱面</button>

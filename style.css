@@ -257,12 +257,19 @@ input[type=range]:disabled, .pp-calc-input-slider:disabled { opacity: 0.4; curso
 /* 加载状态样式 */
 .is-loading .nav-link { pointer-events: none; opacity: 0.5; cursor: not-allowed; }
 .beatmap-card { cursor: pointer; }
+
 /* 自定义工具提示样式 */
 .custom-tooltip-container { position: relative; display: inline-flex; align-items: center; }
 .custom-tooltip-container .custom-tooltip { background-color: transparent; color: var(--text-color); border: 1px solid var(--tooltip-border-color); padding: 10px; font-size: 0.875rem; border-radius: 6px; visibility: hidden; opacity: 0; transition: none; position: absolute; z-index: 50; bottom: 140%; left: 50%; transform: translateX(-50%); box-shadow: none; white-space: nowrap; }
 .custom-tooltip-container:hover .custom-tooltip { visibility: visible; opacity: 1; }
 .custom-tooltip-container .custom-tooltip::after { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-border-color) transparent transparent transparent; }
 .custom-tooltip-container .custom-tooltip::before { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: var(--tooltip-border-color) transparent transparent transparent; } .custom-tooltip-container .custom-tooltip::after { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-bg-color) transparent transparent transparent; }
+
 /* 搜索卡片标题样式 */
 .beatmap-card__title a {transition: color 0.2s ease;}
 .beatmap-card__title a:hover { color: var(--primary-hover-color) !important;text-decoration: underline !important;}
+
+/* 返回顶部按钮样式 */
+.back-to-top-button { position: fixed; bottom: 25px; right: 25px; width: 48px; height: 48px; border-radius: 50%; background-color: var(--primary-color); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s; } 
+.back-to-top-button:hover { background-color: var(--primary-hover-color); } 
+.back-to-top-button.show { opacity: 1; visibility: visible; transform: translateY(0); }
