@@ -6,7 +6,7 @@
 
 export const OSU_API_BASE_URL = 'https://osu.ppy.sh/api/v2';
 export const OSU_TOKEN_URL = 'https://osu.ppy.sh/oauth/token';
-export const CORS_PROXY_URL = 'https://osynic-cors.deno.dev/';
+export const CORS_PROXY_URL = 'https://cors.eu.org/';
 
 export const DOWNLOAD_SOURCE_INFO = {
     nerinyan: { name: 'Nerinyan', url: 'https://api.nerinyan.moe/d/' },
