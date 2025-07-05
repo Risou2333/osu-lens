@@ -263,3 +263,6 @@ input[type=range]:disabled, .pp-calc-input-slider:disabled { opacity: 0.4; curso
 .custom-tooltip-container:hover .custom-tooltip { visibility: visible; opacity: 1; }
 .custom-tooltip-container .custom-tooltip::after { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-border-color) transparent transparent transparent; }
 .custom-tooltip-container .custom-tooltip::before { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: var(--tooltip-border-color) transparent transparent transparent; } .custom-tooltip-container .custom-tooltip::after { content: " "; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: var(--tooltip-bg-color) transparent transparent transparent; }
+/* 搜索卡片标题样式 */
+.beatmap-card__title a {transition: color 0.2s ease;}
+.beatmap-card__title a:hover { color: var(--primary-hover-color) !important;text-decoration: underline !important;}
