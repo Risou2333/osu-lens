@@ -28,7 +28,7 @@ export async function getAccessToken(id, secret, isSilent = false) {
         body.append('client_secret', secret);
         body.append('scope', 'public');
         
-        const response = await fetch(CORS_PROXY_URL + OSU_TOKEN_URL, {
+        const response = await fetch(CORS_PROXY_URL + encodeURIComponent(OSU_TOKEN_URL), {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body,
@@ -66,7 +66,7 @@ export async function fetchV2Api(endpoint) {
     const token = await getAccessToken(dom.clientIdInput.value, dom.clientSecretInput.value);
     if (!token) return null;
 
-    const response = await fetch(CORS_PROXY_URL + `${OSU_API_BASE_URL}/${endpoint}`, {
+    const response = await fetch(CORS_PROXY_URL + encodeURIComponent(`${OSU_API_BASE_URL}/${endpoint}`), {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
     });
 
