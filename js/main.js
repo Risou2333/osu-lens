@@ -423,105 +423,76 @@ async function handleBeatmapIdentify() {
     const bdom = dom.beatmapSearchPage;
     const text = String(bdom.queryInput.value).trim();
     const resultsContainer = bdom.resultsContainer;
-    
+    const statusFiltersContainer = document.getElementById('beatmapStatusFilters'); // 获取筛选栏容器
+
     if (!text) {
         showToast("请粘贴包含谱面ID的文本");
         return;
     }
-    
-    // 识别所有4-8位数字，且第一位不是0
+
     const idRegex = /\b[1-9]\d{3,7}\b/g;
     const matches = text.match(idRegex) || [];
-    
-    // 去重
     const uniqueIds = [...new Set(matches)];
-    
+
     if (uniqueIds.length === 0) {
         showToast("未找到有效的谱面ID");
         return;
     }
-    
-    // 自动切换到"全部"筛选器
+
     const allFilter = document.querySelector('.sort-header[data-status="any"]');
     if (allFilter && !allFilter.classList.contains('active')) {
         document.querySelectorAll('.sort-header').forEach(h => h.classList.remove('active'));
         allFilter.classList.add('active');
         appState.beatmapStatusFilter = 'any';
     }
-    
-    // 开始识别前，重置搜索状态和清空容器
+
     appState.beatmapSearchCursor = null;
     appState.isFetchingBeatmaps = true;
     resultsContainer.className = 'beatmap-grid-container';
-    resultsContainer.innerHTML = `<div class="text-center p-4" style="grid-column: 1 / -1;"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div><p class="mt-2">正在搜索 ${uniqueIds.length} 个谱面ID...</p></div>`;
+    resultsContainer.innerHTML = `<div class="text-center p-4" style="grid-column: 1 / -1;"><div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style="border-color: var(--primary-color); border-top-color: transparent;"></div><p class="mt-2">正在识别 ${uniqueIds.length} 个谱面ID...</p></div>`;
     resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
+
+    // 核心改动：禁用筛选功能
+    statusFiltersContainer.classList.add('disabled');
+
     try {
         resultsContainer.innerHTML = '';
         let totalFound = 0;
         let displayedCount = 0;
-        const displayedBeatmapsetIds = new Set(); // 1. 初始化一个Set来记录已显示的谱面集ID
+        const displayedBeatmapsetIds = new Set();
 
-        // 逐个加载谱面
         for (let i = 0; i < uniqueIds.length; i++) {
             const beatmapsetId = uniqueIds[i];
-            
+
             try {
                 const result = await searchBeatmapsets({ keywords: beatmapsetId, categories:'any'});
-                
+
                 if (result && result.beatmapsets && result.beatmapsets.length > 0) {
                     for (const beatmapset of result.beatmapsets) {
-                        
-                        // 如果这个谱面集已经显示过了，就跳过，避免重复
                         if (displayedBeatmapsetIds.has(beatmapset.id)) {
                             continue;
                         }
-                    
-                        // 2. 在处理前检查是否重复
+
                         if (displayedBeatmapsetIds.has(beatmapset.id)) {
-                            continue; // 如果已显示，则跳过
+                            continue;
                         }
 
                         totalFound++;
-                        
                         let shouldDisplay = true;
-                        // ... (筛选逻辑不变)
 
                         if (shouldDisplay) {
                             const cardHTML = createBeatmapsetCardHTML(beatmapset);
                             resultsContainer.insertAdjacentHTML('beforeend', cardHTML);
                             displayedCount++;
-                            displayedBeatmapsetIds.add(beatmapset.id); // 4. 添加到记录中
+                            displayedBeatmapsetIds.add(beatmapset.id);
                         }
                     }
                 }
             } catch (error) {
                 console.log(`ID ${beatmapsetId} 搜索失败:`, error);
             }
-            
-            // 更新加载进度
-            if (i < uniqueIds.length - 1) {
-                const progressElem = document.createElement('div');
-                progressElem.className = 'text-center p-2';
-                progressElem.style.gridColumn = '1 / -1';
-                progressElem.innerHTML = `<p>已加载 ${i+1}/${uniqueIds.length} 个谱面ID...</p>`;
-                
-                const existingProgress = resultsContainer.querySelector('.text-center.p-2');
-                if (existingProgress) {
-                    resultsContainer.replaceChild(progressElem, existingProgress);
-                } else if (resultsContainer.children.length === 0) {
-                    resultsContainer.appendChild(progressElem);
-                }
-            }
         }
-        
-        // 移除进度提示
-        const progressElem = resultsContainer.querySelector('.text-center.p-2');
-        if (progressElem) {
-            resultsContainer.removeChild(progressElem);
-        }
-        
-        // 显示结果摘要 (仅当未找到符合筛选条件的谱面时显示)
+
         if (displayedCount === 0) {
             resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;">未找到符合当前筛选条件的谱面。</p>';
         } 
@@ -529,9 +500,10 @@ async function handleBeatmapIdentify() {
         console.error("谱面识别失败:", error);
         resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">识别失败: ${error.message}</p>`;
     } finally {
-        // 识别完成后，保持beatmapSearchCursor为null，防止触发加载更多
+        // 核心改动：无论成功或失败，都恢复筛选功能
         appState.beatmapSearchCursor = null;
         appState.isFetchingBeatmaps = false;
+        statusFiltersContainer.classList.remove('disabled');
     }
 }
 
