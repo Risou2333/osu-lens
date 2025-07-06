@@ -71,14 +71,18 @@ function closePlayer() {
 export function setupAudioPlayerListeners() {
     const p = dom.player;
     document.body.addEventListener('click', e => {
-        const audioTrigger = e.target.closest('[data-beatmapset]');
-        if (audioTrigger) {
+        const audioTrigger = e.target.closest('.beatmap-cover-container, .beatmap-listen-btn');
+
+        if (!audioTrigger) {
+            return;
+        }
+
+        if (audioTrigger.dataset.beatmapset) {
             try {
-                // 解析存储在 data-beatmapset 属性中的谱面信息
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = audioTrigger.dataset.beatmapset;
                 const beatmapset = JSON.parse(tempDiv.textContent);
-                if (beatmapset.id) { // 确保解析出了有效对象
+                if (beatmapset.id) { 
                     playAudio(beatmapset);
                 }
             } catch (err) {
