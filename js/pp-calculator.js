@@ -375,7 +375,6 @@ export function setupPpCalculatorListeners() {
         const playCalcBtn = e.target.closest('.pp-calc-btn');
         const beatmapCalcBtn = e.target.closest('.pp-calc-beatmap-btn');
         if (playCalcBtn) {
-            e.stopPropagation();
             try {
                 const playData = JSON.parse(playCalcBtn.dataset.play);
                 const beatmapData = JSON.parse(playCalcBtn.dataset.beatmap);
