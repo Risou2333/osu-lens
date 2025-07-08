@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>osu!lens - 玩家信息查看与PP分析</title>
-    <meta name="google-site-verification" content="BEw1pTXGfVV2Cf_CUrIieObiCnaztb8EWSnWYFRHnOE" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://fastly.jsdelivr.net/npm/chart.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link id="theme-stylesheet" rel="stylesheet" href="">
 </head>
 
 <button id="backToTopBtn" class="back-to-top-button" title="回到顶部">
@@ -29,7 +28,15 @@
     <header id="pageHeader" class="sticky top-0 z-40 w-full py-2 transition-shadow duration-300" style="background-color: var(--bg-color);">
         <div class="w-full max-w-5xl mx-auto px-3 sm:px-4">
             <nav id="navBar" class="w-full mx-auto flex items-center justify-between border-t border-b py-2" style="border-color: var(--input-border-color);">
-                <button id="toggleSearchBtn" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 transition-opacity px-2 py-1 rounded-md flex items-center gap-2" title="切换搜索框">🔍</button>
+                
+                <div class="flex items-center gap-2">
+                    <button id="toggleSearchBtn" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 transition-opacity px-2 py-1 rounded-md flex items-center gap-2" title="切换搜索框">🔍</button>
+                    
+                    <button id="themeToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors text-xl" title="切换主题">
+                        🎨
+                    </button>
+                </div>
+
                 <div id="navLinksContainer" class="hidden sm:flex justify-center space-x-6 sm:space-x-10">
                     <a data-page="playerInfoSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">👦 玩家信息</a>
                     <a data-page="topPlaysAnalysisSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">📊 Plays 分析</a>
@@ -37,6 +44,7 @@
                     <a data-page="recentPlaysSection" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🕒 最近游玩</a>
                     <a data-page="beatmapSearchPage" class="nav-link text-sm sm:text-base font-medium opacity-80 hover:opacity-100 px-2 py-1 rounded-md flex items-center gap-2">🎵 谱面搜索</a>
                 </div>
+
                 <div class="flex items-center gap-2">
                     <button id="languageToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors h-10 w-10 flex items-center justify-center text-lg font-semibold" title="切换显示语言">あ</button>
                     <button id="sourceToggleBtn" class="p-2 rounded-full hover:bg-gray-500/20 transition-colors" title="切换下载源">
