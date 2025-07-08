@@ -1235,13 +1235,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         { name: 'book', path: '1_book' }
     ];
 
+    await loadTheme(0);
     setupCredentials();
     createPpCalculatorControls();
     initializePpCalculatorMods();
     setupEventListeners();
-    setupBackgroundAnimation();
-
-    await loadTheme(0); 
+    setupBackgroundAnimation()
 
     loadSearchHistory();
     
