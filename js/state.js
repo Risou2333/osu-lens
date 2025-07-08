@@ -31,6 +31,8 @@ export const appState = {
     downloadSource: 'nerinyan',
     displayUnicode: true,
     currentlyPlaying: null,
+    currentThemeIndex: 0, 
+    themes: [],   
 };
 
 export const activeCharts = {};

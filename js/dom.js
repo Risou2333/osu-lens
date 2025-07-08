@@ -5,6 +5,8 @@
  */
 
 export const dom = {
+    themeToggleBtn: document.getElementById('themeToggleBtn'), 
+    themeStylesheet: document.getElementById('theme-stylesheet'), 
     clientIdInput: document.getElementById('clientId'),
     clientSecretInput: document.getElementById('clientSecret'),
     sourceToggleBtn: document.getElementById('sourceToggleBtn'),

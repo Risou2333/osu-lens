@@ -20,6 +20,34 @@ import { createPpCalculatorControls, initializePpCalculatorMods, setupPpCalculat
 import { renderPlayerInfo, renderFilteredAndSortedTopPlays, renderFilteredRecentPlays, showPage, updateSortHeadersUI, updateDownloadLinks, showKeySetupUI, showKeyManagementUI, createPlayCardHTML, createBeatmapsetCardHTML, hideAllContentSections } from './ui.js';
 import { openDownloadLink } from './utils.js';
 
+async function loadTheme(themeIndex) {
+    const theme = appState.themes[themeIndex % appState.themes.length];
+    if (!theme) {
+        console.error(`主题索引 ${themeIndex} 无效。`);
+        return;
+    }
+
+    appState.currentThemeIndex = themeIndex % appState.themes.length;
+    
+    dom.themeStylesheet.href = `theme/${theme.path}/style.css`;
+
+    try {
+        const animationModule = await import(`../../theme/${theme.path}/animation.js`);
+        if (animationModule && typeof animationModule.setupBackgroundAnimation === 'function') {
+            animationModule.setupBackgroundAnimation();
+        }
+    } catch (error) {
+        console.error(`加载主题 "${theme.name}" 的动画脚本失败: `, error);
+        const canvas = document.getElementById('background-animation-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+    
+    showToast(`已切换至 ${theme.name} 主题`);
+}
+
 async function loadMoreRecentPlays() {
     if (appState.isFetchingRecentPlays || appState.allRecentPlaysLoaded || !currentPlayer) return;
 
@@ -629,6 +657,11 @@ function setupEventListeners() {
         handleSearch();
     });
 
+    dom.themeToggleBtn.addEventListener('click', () => {
+        const nextThemeIndex = (appState.currentThemeIndex + 1) % appState.themes.length;
+        loadTheme(nextThemeIndex);
+    });
+
     dom.toggleSearchBtn.addEventListener('click', () => {
         const wasSearchCardVisible = !dom.searchCard.classList.contains('hidden');
         hideAllContentSections(); 
@@ -1197,11 +1230,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
+    appState.themes = [
+        { name: 'osu!', path: '0_osu' },
+        { name: 'book', path: '1_book' }
+    ];
+
     setupCredentials();
     createPpCalculatorControls();
     initializePpCalculatorMods();
     setupEventListeners();
     setupBackgroundAnimation();
+
+    await loadTheme(0); 
 
     loadSearchHistory();
     
