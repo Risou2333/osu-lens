@@ -1231,16 +1231,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     appState.themes = [
-        { name: 'osu!', path: '0_osu' },
-        { name: 'book', path: '1_book' }
+        { name: '粉饼', path: '0_osu' },
+        { name: '典雅', path: '1_book' },
+        { name: '像素', path: '2_pixel' },
     ];
 
-    await loadTheme(0);
     setupCredentials();
     createPpCalculatorControls();
     initializePpCalculatorMods();
     setupEventListeners();
-    setupBackgroundAnimation()
+    setupBackgroundAnimation();
+
+    await loadTheme(0); 
 
     loadSearchHistory();
     
