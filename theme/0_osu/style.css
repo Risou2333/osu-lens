@@ -35,7 +35,7 @@ html {
 #background-animation-canvas { position: fixed; inset: 0px; z-index: -1; pointer-events: none; }
 #theme-background { position: fixed; inset: 0px; z-index: -2; background-color: var(--bg-color); }
 html { scroll-behavior: smooth; }
-body { font-family: 'Zpix', 'Inter', sans-serif; color: var(--text-color); }
+body { font-family: 'Inter', sans-serif; color: var(--text-color); }
 #pageHeader { background-color: transparent !important; }
 
 /* 卡片和按钮样式 */
