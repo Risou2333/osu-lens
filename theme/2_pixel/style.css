@@ -1,8 +1,7 @@
 /*
  * 日系像素风主题 (Japanese Pixel Theme) - 已修正
- * 字体: fusion-pixel-font
+ * 字体: zpix
  */
-@import url('https://cdn.jsdelivr.net/npm/fusion-pixel-font@latest/dist/fusion-pixel.css');
 @keyframes flash-bg-effect { 0%, 50% { background-color: var(--highlight-flash-bg-color); } 100% { background-color: transparent; } }
 @keyframes flash-glow-effect { 0%, 50% { border-color: var(--highlight-flash-glow-color); box-shadow: 2px 2px 0px var(--highlight-flash-glow-color); } }
 @keyframes marquee { 0% { transform: translateX(0); } 20% { transform: translateX(0); } 80% { transform: translateX(calc(-100% + var(--marquee-parent-width, 200px))); } 100% { transform: translateX(calc(-100% + var(--marquee-parent-width, 200px))); } }
