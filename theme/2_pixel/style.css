@@ -2,7 +2,6 @@
  * 日系像素风主题 (Japanese Pixel Theme) - 已修正中文像素化
  * 字体: Zpix (最像素)
  */
-@import url('https://cdn.jsdelivr.net/npm/zpix-pixel-font@latest/dist/zpix.css');
 
 @keyframes flash-bg-effect { 0%, 50% { background-color: var(--highlight-flash-bg-color); } 100% { background-color: transparent; } }
 @keyframes flash-glow-effect { 0%, 50% { border-color: var(--highlight-flash-glow-color); box-shadow: 2px 2px 0px var(--highlight-flash-glow-color); } }
