@@ -41,6 +41,23 @@ html {
 html { scroll-behavior: smooth; }
 body { font-family: 'fusion-pixel'; color: var(--text-color); image-rendering: pixelated; text-shadow: 1px 1px 0px #2c3e50; -webkit-font-smoothing: none;-moz-osx-font-smoothing: grayscale;font-smooth: never;}
 body::after { content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.1) 3px); pointer-events: none; z-index: 9999; animation: crt-flicker 15s linear infinite; }
+* {
+    /* 强制所有元素使用像素字体 */
+    font-family: inherit;
+
+    /* 强制所有图片以像素化方式渲染 */
+    image-rendering: pixelated;
+
+    /* 移除所有元素的圆角，使其棱角分明 */
+    border-radius: 0 !important;
+    
+    /* 移除所有元素的默认过渡效果，实现即时变化的像素感 */
+    transition: none !important;
+
+    /* 统一所有元素的阴影为像素风格 */
+    box-shadow: 2px 2px 0px #2c3e50;
+}
+
 h1,h2,h3,h4,h5,h6 { font-weight: normal; text-shadow: 2px 2px 0px #2c3e50; }
 #pageHeader { position: static !important; }
 
@@ -56,6 +73,10 @@ h1,h2,h3,h4,h5,h6 { font-weight: normal; text-shadow: 2px 2px 0px #2c3e50; }
 .beatmap-card.drag-over { background-color: var(--highlight-bg-color); border-color: var(--primary-color); box-shadow: 2px 2px 0px var(--primary-color); transform: scale(1.01); transition: none; }
 .beatmap-card.selected { border: 2px solid var(--primary-color); box-shadow: 2px 2px 0px var(--primary-color); }
 .btn-primary { background-color: var(--primary-color); color: var(--primary-text-color); border: 2px solid #2c3e50; padding: 0.6rem 1.5rem; border-radius: 0; transition: none; box-shadow: 2px 2px 0px #2c3e50; }
+/* 对于需要特殊处理的元素，进行覆盖 */
+.btn-primary:hover, .glass-card:hover { 
+    box-shadow: 3px 3px 0px #2c3e50 !important; 
+}
 .btn-primary:hover { background-color: var(--primary-hover-color); transform: translate(-1px, -1px); box-shadow: 3px 3px 0px #2c3e50; }
 .input-field, .select-field { background-color: var(--input-bg-color); border: 2px solid var(--input-border-color); color: var(--text-color); border-radius: 0; padding: 0.75rem; font-size: 1.2rem; font-family: 'VT323', monospace; }
 .input-field:focus, .select-field:focus { border-color: var(--input-focus-border-color); outline: none; box-shadow: none; }
