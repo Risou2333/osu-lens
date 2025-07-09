@@ -39,10 +39,7 @@ html {
 #background-animation-canvas { position: fixed; inset: 0px; z-index: -1; pointer-events: none; }
 #theme-background { position: fixed; inset: 0px; z-index: -2; background-color: var(--bg-color); }
 html { scroll-behavior: smooth; }
-body { font-family: 'VT323', 'fusion-pixel'; color: var(--text-color); image-rendering: pixelated; text-shadow: 1px 1px 0px #2c3e50;     -webkit-font-smoothing: none;-moz-osx-font-smoothing: grayscale;font-smooth: never;}
-* {
-    font-family: inherit !important;
-}
+body { font-family: 'fusion-pixel'; color: var(--text-color); image-rendering: pixelated; text-shadow: 1px 1px 0px #2c3e50; -webkit-font-smoothing: none;-moz-osx-font-smoothing: grayscale;font-smooth: never;}
 body::after { content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px, rgba(0, 0, 0, 0.1) 3px); pointer-events: none; z-index: 9999; animation: crt-flicker 15s linear infinite; }
 h1,h2,h3,h4,h5,h6 { font-weight: normal; text-shadow: 2px 2px 0px #2c3e50; }
 #pageHeader { position: static !important; }
