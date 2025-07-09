@@ -10,6 +10,33 @@
     <script src="https://fastly.jsdelivr.net/npm/chart.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link id="theme-stylesheet" rel="stylesheet" href="theme/0_osu/style.css">
+    
+    <style>
+        @import url('https://cdn.jsdelivr.net/npm/fusion-pixel-font@latest/dist/fusion-pixel.css');
+        
+        /* 当 body 拥有 .pixel-font class 时，强制所有元素使用像素字体 */
+        body.pixel-font,
+        body.pixel-font h1,
+        body.pixel-font h2,
+        body.pixel-font h3,
+        body.pixel-font h4,
+        body.pixel-font p,
+        body.pixel-font a,
+        body.pixel-font span,
+        body.pixel-font div,
+        body.pixel-font button,
+        body.pixel-font input,
+        body.pixel-font select,
+        body.pixel-font label {
+            font-family: 'fusion-pixel-font', 'VT323', monospace !important;
+            /* 以下属性增强像素感，源自像素主题的 CSS 文件 */
+            image-rendering: pixelated;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: grayscale;
+            font-smooth: never;
+            text-shadow: 1px 1px 0px #2c3e50 !important;
+        }
+    </style>
 </head>
 
 <button id="backToTopBtn" class="back-to-top-button" title="回到顶部">
@@ -360,7 +387,6 @@
 
     <div id="toast"></div>
 
-    <!-- PP Calculator Modal -->
     <div id="pp-calculator-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[1001] p-4">
         <div id="pp-calculator-card" class="card w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div class="relative flex justify-center items-center p-4 border-b" style="border-color: var(--input-border-color);">
@@ -433,5 +459,32 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeStylesheet = document.getElementById('theme-stylesheet');
+            
+            // 定义一个函数来检查并应用字体 class
+            const checkAndApplyPixelFont = () => {
+                const isPixelTheme = themeStylesheet.href.includes('theme/2_pixel/style.css');
+                document.body.classList.toggle('pixel-font', isPixelTheme);
+            };
+
+            // 创建一个 MutationObserver 来监听样式表的变化
+            const observer = new MutationObserver((mutationsList) => {
+                for (let mutation of mutationsList) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'href') {
+                        checkAndApplyPixelFont();
+                    }
+                }
+            });
+
+            // 配置并启动 observer
+            observer.observe(themeStylesheet, { attributes: true });
+            
+            // 页面加载时立即检查一次
+            checkAndApplyPixelFont();
+        });
+    </script>
  </body>
  </html>
