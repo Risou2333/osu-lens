@@ -1,0 +1,276 @@
+/*
+ * 日漫黑白风主题 (Manga Black & White Theme)
+ * 特色: 高对比度, CSS 网点背景, 漫画边框, 实色块投影
+ */
+
+:root {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --card-bg-color: #ffffff;
+    --primary-color: #000000;
+    --primary-text-color: #ffffff;
+    --primary-hover-color: #333333;
+    --input-bg-color: #ffffff;
+    --input-border-color: #000000;
+    --input-focus-border-color: #000000;
+    --stat-value-color: #000000;
+    --stat-value-secondary-color: #666666;
+    --stat-value-imperfect-color: #333333;
+    --stat-value-increase-color: #000000;
+    --stat-value-decrease-color: #444444;
+    --section-title-color: #000000;
+    --section-title-border-color: #000000;
+    --analysis-subtitle-color: #000000;
+    --link-color: #000000;
+    --link-hover-color: #333333;
+    --nav-link-active-bg: #000000;
+    --nav-link-active-color: #ffffff;
+    --rank-d-color: #000000;
+    --rank-c-color: #000000;
+    --rank-b-color: #000000;
+    --rank-a-color: #000000;
+    --rank-s-gold-color: #000000;
+    --rank-s-silver-color: #000000;
+    --rank-f-color: #666666;
+    --rank-x-color: #000000;
+    --rank-xh-color: #000000;
+    --chart-grid-color: rgba(0, 0, 0, 0.1);
+    --chart-tick-color: #000000;
+    --tooltip-bg-color: #ffffff;
+    --tooltip-border-color: #000000;
+    --scrollbar-track-color: #ffffff;
+    --scrollbar-thumb-color: #000000;
+    --highlight-bg-color: rgba(0, 0, 0, 0.05);
+    --highlight-flash-bg-color: rgba(0, 0, 0, 0.2);
+    --highlight-flash-glow-color: #000000;
+    --bp-display-bg: #000000;
+    --bp-display-text: #ffffff;
+    --sort-header-active-bg: #000000;
+    --sort-header-hover-bg: rgba(0, 0, 0, 0.05);
+    --download-btn-bg: transparent;
+    --download-btn-hover-bg: #000000;
+    --glass-card-bg: #ffffff;
+    --glass-card-border: #000000;
+    --glass-card-overlay-color: rgba(255, 255, 255, 0.2);
+    --player-overlay-color: rgba(255, 255, 255, 0.1);
+    --player-bg-color: #ffffff;
+    --glass-ui-bg-color: #ffffff;
+    --glass-ui-border-color: #000000;
+    --banner-overlay-color-start: rgba(255, 255, 255, 0);
+    --banner-overlay-color-end: #ffffff;
+}
+
+/* 网点背景效果 (Screentone) */
+#theme-background {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-color: #ffffff;
+    background-image: radial-gradient(#000000 0.5px, transparent 0.5px);
+    background-size: 8px 8px;
+    opacity: 0.15;
+}
+
+body {
+    font-family: 'Inter', 'Zpix', sans-serif;
+    color: var(--text-color);
+    background-color: #ffffff;
+}
+
+#background-animation-canvas {
+    position: fixed;
+    inset: 0px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* 漫画风格卡片 */
+.card {
+    background-color: #ffffff !important;
+    border: 3px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: 6px 6px 0px #000000 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.glass-card {
+    background-color: #ffffff !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0px #000000 !important;
+    margin-bottom: 1.25rem !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.glass-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #000000 !important;
+}
+
+.glass-card::before {
+    filter: grayscale(1) contrast(1.5) !important;
+    opacity: 0.3 !important;
+}
+
+/* 漫画风按钮 */
+.btn-primary, .download-btn {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0px #000000 !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    transition: all 0.1s ease !important;
+}
+
+.btn-primary:hover, .download-btn:hover {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0px #000000 !important;
+}
+
+/* 输入框 */
+.input-field, .select-field {
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1) !important;
+}
+
+/* 导航栏 */
+#pageHeader {
+    border-bottom: 2px solid #000000;
+}
+
+.nav-link {
+    border-radius: 0 !important;
+    border: 2px solid transparent !important;
+    font-weight: 700 !important;
+}
+
+.nav-link.active {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border-color: #000000 !important;
+}
+
+/* 页面标题 */
+h1 {
+    font-weight: 900 !important;
+    letter-spacing: -1px;
+    -webkit-text-stroke: 1px #000000;
+}
+
+.section-title {
+    border-left: 8px solid #000000 !important;
+    padding-left: 1rem !important;
+    text-transform: uppercase;
+    font-style: italic;
+}
+
+/* 统计数据 */
+.stat-value {
+    font-family: 'Zpix', sans-serif;
+    font-size: 1.5rem !important;
+}
+
+/* 排名颜色 - 漫画风统一使用黑色粗体 */
+.rank-d, .rank-c, .rank-b, .rank-a, .rank-s, .rank-sh, .rank-x, .rank-xh {
+    color: #000000 !important;
+    font-weight: 900 !important;
+    text-decoration: underline;
+}
+
+/* 进度条 */
+.difficulty-gradient {
+    background: repeating-linear-gradient(
+        45deg,
+        #000000,
+        #000000 2px,
+        #ffffff 2px,
+        #ffffff 4px
+    ) !important;
+    border: 1px solid #000000;
+    opacity: 1 !important;
+}
+
+/* 玩家横幅 */
+#player-banner {
+    border: 3px solid #000000;
+    border-radius: 0;
+    box-shadow: 8px 8px 0px #000000;
+    filter: grayscale(1);
+}
+
+#playerAvatar {
+    border: 4px solid #000000 !important;
+    box-shadow: 4px 4px 0px #000000;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+    width: 12px;
+}
+::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-left: 2px solid #000000;
+}
+::-webkit-scrollbar-thumb {
+    background: #000000;
+    border: 2px solid #ffffff;
+}
+
+/* 选中的卡片 */
+.glass-card.selected, .beatmap-card.selected {
+    border: 4px solid #000000 !important;
+    background-color: #eeeeee !important;
+}
+
+/* 音频播放器 */
+#audioPlayer {
+    background-color: #ffffff !important;
+    border: 3px solid #000000 !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0px #000000 !important;
+}
+
+#player-progress-bar, #player-volume-slider {
+    border: 1px solid #000000;
+}
+
+#player-progress-bar::-webkit-slider-thumb, #player-volume-slider::-webkit-slider-thumb {
+    background: #000000 !important;
+    border-radius: 0 !important;
+}
+
+/* Toast */
+#toast {
+    border-radius: 0 !important;
+    border: 2px solid #000000 !important;
+    box-shadow: 4px 4px 0px #000000 !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-weight: 700;
+}
+
+/* PP 计算器 */
+#pp-calculator-card {
+    border-radius: 0 !important;
+    border: 4px solid #000000 !important;
+    box-shadow: 10px 10px 0px rgba(0,0,0,0.5) !important;
+}
+
+.pp-calc-mod-label {
+    border-radius: 0 !important;
+    border: 2px solid #000000 !important;
+}
+
+/* 动画类 */
+@keyframes speed-line {
+    from { transform: translateX(100%); }
+    to { transform: translateX(-100%); }
+}
