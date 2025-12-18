@@ -4,11 +4,11 @@
  * 应用主入口文件。负责导入所有模块，初始化应用，并编排核心业务逻辑和事件监听。
  */
 
-import init from '../rosu_pp_js/rosu_pp_js.js';
+import init from './rosu_pp_js/rosu_pp_js.js';
 import { dom } from './dom.js';
-import { 
+import {
     appState, downloadSource, currentPlayer, recentPlaysLoaded, originalTopPlaysDetails, recentPlaysDetails,
-    setAccessToken, setDownloadSource, setCurrentPlayer, setRecentPlaysLoaded, 
+    setAccessToken, setDownloadSource, setCurrentPlayer, setRecentPlaysLoaded,
     setOriginalTopPlays, setRecentPlays, setProcessedPlaysForChart, resetPlayerData
 } from './state.js';
 import { DOWNLOAD_SOURCE_INFO } from './config.js';
@@ -28,7 +28,7 @@ async function loadTheme(themeIndex) {
     }
 
     appState.currentThemeIndex = themeIndex % appState.themes.length;
-    
+
     dom.themeStylesheet.href = `theme/${theme.path}/style.css`;
 
     try {
@@ -44,7 +44,7 @@ async function loadTheme(themeIndex) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
-    
+
     showToast(`已切换至 ${theme.name} 主题`);
 }
 
@@ -82,9 +82,9 @@ async function loadMoreRecentPlays() {
                     recentIndex: appState.recentPlaysOffset + index,
                 };
             }).filter(detail => detail.beatmapData && detail.beatmapsetData);
-            
+
             const newCardsHTML = newPlayDetails.map(d => {
-                 if (d.isBp) {
+                if (d.isBp) {
                     return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'top', d.bpDetails.originalIndex, true);
                 } else {
                     return createPlayCardHTML(d.playData, d.beatmapData, d.beatmapsetData, 'recent', d.recentIndex);
@@ -100,7 +100,7 @@ async function loadMoreRecentPlays() {
                 const message = appState.recentPlaysOffset >= 500 ? '已达到 API 查询上限 (500条记录)。' : '没有更多成绩了。';
                 dom.recentPlaysLoader.innerHTML = `<p class="opacity-70">${message}</p>`;
             } else {
-                 dom.recentPlaysLoader.innerHTML = `<button id="loadMoreBtn" class="btn-primary">加载更多</button>`;
+                dom.recentPlaysLoader.innerHTML = `<button id="loadMoreBtn" class="btn-primary">加载更多</button>`;
             }
         } else {
             appState.allRecentPlaysLoaded = true;
@@ -145,7 +145,7 @@ function removeFromSearchHistory(playerId) {
     appState.searchHistory = appState.searchHistory.filter(p => p.id.toString() !== playerId.toString());
     localStorage.setItem('osuSearchHistory', JSON.stringify(appState.searchHistory));
     renderSearchHistory();
-    if(appState.searchHistory.length === 0) {
+    if (appState.searchHistory.length === 0) {
         dom.searchHistoryContainer.classList.add('hidden');
     }
 }
@@ -161,7 +161,7 @@ function addToSearchHistory(player) {
     if (appState.searchHistory.length > 10) {
         appState.searchHistory = appState.searchHistory.slice(0, 10);
     }
-    
+
     localStorage.setItem('osuSearchHistory', JSON.stringify(appState.searchHistory));
     renderSearchHistory();
 }
@@ -176,7 +176,7 @@ function loadSearchHistory() {
 
 async function handleSearch() {
     const query = dom.usernameInput.value.trim();
-    
+
     dom.usernameInput.classList.remove('input-error');
 
     if (!query) {
@@ -191,7 +191,7 @@ async function handleSearch() {
     }
 
     const initialActivePage = appState.activePage;
-    
+
     // 【核心修改】无条件调用 setLoading，并设置全局状态
     setLoading(true, `正在加载 ${query} 的数据...`, true);
     appState.isPlayerSearchActive = true;
@@ -208,14 +208,14 @@ async function handleSearch() {
             dom.usernameInput.value = '';
             return;
         }
-        
+
         setCurrentPlayer(player);
         addToSearchHistory(player);
         dom.searchHistoryContainer.classList.add('hidden');
         // ... (函数其余的成功逻辑保持不变)
 
         const topPlaysData = await fetchV2Api(`users/${player.id}/scores/best?limit=100&mode=osu`);
-        
+
         let beatmapMap = new Map();
         const topIds = topPlaysData?.map(p => p.beatmap.id) || [];
 
@@ -239,10 +239,10 @@ async function handleSearch() {
                     originalIndex: index
                 }))
                 .filter(detail => detail.beatmapData && detail.beatmapsetData);
-            
+
             setOriginalTopPlays(plays);
             setProcessedPlaysForChart([...plays]);
-            
+
             updateSortHeadersUI();
             renderFilteredAndSortedTopPlays();
             dom.topPlaysSortAndFilterControls.classList.remove('hidden');
@@ -256,7 +256,7 @@ async function handleSearch() {
         if (originalTopPlaysDetails.length) {
             renderAllEmbeddedCharts(originalTopPlaysDetails);
         }
-        
+
         showPage('playerInfoSection');
 
     } catch (error) {
@@ -266,7 +266,7 @@ async function handleSearch() {
         dom.usernameInput.value = '';
     } finally {
         // 【核心修改】使用 finally 块确保状态总是被重置
-        setLoading(false); 
+        setLoading(false);
         appState.isPlayerSearchActive = false;
     }
 }
@@ -294,7 +294,7 @@ async function handleRecentPlaysRefresh() {
 
         while (!foundExisting && offset < 500) {
             const recentData = await fetchV2Api(`users/${currentPlayer.id}/scores/recent?include_fails=1&limit=${limit}&offset=${offset}&mode=osu`);
-            if (!recentData || recentData.length === 0) break; 
+            if (!recentData || recentData.length === 0) break;
 
             for (const play of recentData) {
                 if (existingPlayIds.has(play.id)) {
@@ -311,11 +311,11 @@ async function handleRecentPlaysRefresh() {
             const newPlayIds = newPlays.map(p => p.beatmap.id);
             let beatmapMap = new Map();
             if (newPlayIds.length > 0) {
-                 const idsQuery = newPlayIds.map(id => `ids[]=${id}`).join('&');
-                 const fullBeatmapsData = await fetchV2Api(`beatmaps?${idsQuery}`);
-                 if (fullBeatmapsData?.beatmaps) {
-                     beatmapMap = new Map(fullBeatmapsData.beatmaps.map(b => [b.id, b]));
-                 }
+                const idsQuery = newPlayIds.map(id => `ids[]=${id}`).join('&');
+                const fullBeatmapsData = await fetchV2Api(`beatmaps?${idsQuery}`);
+                if (fullBeatmapsData?.beatmaps) {
+                    beatmapMap = new Map(fullBeatmapsData.beatmaps.map(b => [b.id, b]));
+                }
             }
 
             const topPlaysMap = new Map(originalTopPlaysDetails.map(p => [p.playData.id, p]));
@@ -400,7 +400,7 @@ async function handleBeatmapSearch(isLoadMore = false) {
         if (isLoadMore && appState.beatmapSearchCursor) {
             searchParams.cursor_string = appState.beatmapSearchCursor;
         }
-        
+
         const result = await searchBeatmapsets(searchParams);
 
         const loader = resultsContainer.querySelector('.beatmap-loader');
@@ -417,12 +417,12 @@ async function handleBeatmapSearch(isLoadMore = false) {
 
             // --- 如果返回的谱面数少于预期，说明是最后一页 ---
             if (result.beatmapsets.length < 50) { // osu! api v2 默认每页返回 50 个
-                 appState.beatmapSearchCursor = null;
-                 const noMoreResults = document.createElement('p');
-                 noMoreResults.className = 'opacity-70 text-center p-4';
-                 noMoreResults.style.gridColumn = '1 / -1';
-                 noMoreResults.textContent = '没有更多了';
-                 resultsContainer.appendChild(noMoreResults);
+                appState.beatmapSearchCursor = null;
+                const noMoreResults = document.createElement('p');
+                noMoreResults.className = 'opacity-70 text-center p-4';
+                noMoreResults.style.gridColumn = '1 / -1';
+                noMoreResults.textContent = '没有更多了';
+                resultsContainer.appendChild(noMoreResults);
             }
         } else {
             appState.beatmapSearchCursor = null;
@@ -493,7 +493,7 @@ async function handleBeatmapIdentify() {
             const beatmapsetId = uniqueIds[i];
 
             try {
-                const result = await searchBeatmapsets({ keywords: beatmapsetId, categories:'any'});
+                const result = await searchBeatmapsets({ keywords: beatmapsetId, categories: 'any' });
 
                 if (result && result.beatmapsets && result.beatmapsets.length > 0) {
                     for (const beatmapset of result.beatmapsets) {
@@ -523,7 +523,7 @@ async function handleBeatmapIdentify() {
 
         if (displayedCount === 0) {
             resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;">未找到符合当前筛选条件的谱面。</p>';
-        } 
+        }
     } catch (error) {
         console.error("谱面识别失败:", error);
         resultsContainer.innerHTML = `<p class="text-red-400 text-center p-4" style="grid-column: 1 / -1;">识别失败: ${error.message}</p>`;
@@ -538,27 +538,27 @@ async function handleBeatmapIdentify() {
 // 新增：切换搜索模式
 function toggleBeatmapSearchMode() {
     const bdom = dom.beatmapSearchPage;
-    
+
     // 添加动画效果
     bdom.modeToggleBtn.classList.add('animate-flash');
     bdom.modeToggleBtn.addEventListener('animationend', () => {
         bdom.modeToggleBtn.classList.remove('animate-flash');
     }, { once: true });
-    
+
     // 清空输入框
     bdom.queryInput.value = '';
-    
+
     if (appState.beatmapSearchMode === 'search') {
         // 切换到识别模式
         appState.beatmapSearchMode = 'identify';
         bdom.searchBtn.classList.add('hidden');
         bdom.identifyBtn.classList.remove('hidden');
         bdom.queryInput.placeholder = "粘贴文本以识别谱面";
-        
+
         // 清空之前的搜索结果和游标
         bdom.resultsContainer.innerHTML = '<p class="opacity-70 text-center p-4" style="grid-column: 1 / -1;"></p>';
         appState.beatmapSearchCursor = null;
-        
+
         // 切换到"全部"筛选器
         const allFilter = document.querySelector('.sort-header[data-status="any"]');
         if (allFilter && !allFilter.classList.contains('active')) {
@@ -566,7 +566,7 @@ function toggleBeatmapSearchMode() {
             allFilter.classList.add('active');
             appState.beatmapStatusFilter = 'any';
         }
-        
+
         showToast("已切换到识别模式");
     } else {
         // 切换到搜索模式
@@ -574,11 +574,11 @@ function toggleBeatmapSearchMode() {
         bdom.identifyBtn.classList.add('hidden');
         bdom.searchBtn.classList.remove('hidden');
         bdom.queryInput.placeholder = "输入歌曲名、作者、谱师等关键词或谱面ID...";
-        
+
         // 清空之前的结果
         bdom.resultsContainer.innerHTML = '';
         appState.beatmapSearchCursor = null;
-        
+
         // 切换到"拥有排行榜"筛选器
         const rankedFilter = document.querySelector('.sort-header[data-status=""]');
         if (rankedFilter && !rankedFilter.classList.contains('active')) {
@@ -589,7 +589,7 @@ function toggleBeatmapSearchMode() {
 
         // 切换到搜索模式时，进行空关键词搜索
         handleBeatmapSearch();
-        
+
         showToast("已切换到搜索模式");
     }
 }
@@ -608,7 +608,7 @@ function setupCredentials() {
 }
 
 function setupEventListeners() {
-    
+
     dom.usernameInput.addEventListener('focus', () => {
         if (appState.searchHistory.length > 0) {
             dom.searchHistoryContainer.classList.remove('hidden');
@@ -624,7 +624,7 @@ function setupEventListeners() {
             button.addEventListener('animationend', () => {
                 button.classList.remove('animate-flash');
             }, { once: true });
-            
+
             handleSearch();
         }
     });
@@ -636,10 +636,10 @@ function setupEventListeners() {
         if (deleteButton) {
             const playerId = deleteButton.dataset.id;
             removeFromSearchHistory(playerId);
-            e.stopPropagation(); 
+            e.stopPropagation();
         } else if (mainContent) {
             dom.searchHistoryContainer.classList.add('hidden');
-            
+
             const username = mainContent.dataset.username;
             dom.usernameInput.value = username;
             handleSearch();
@@ -653,7 +653,7 @@ function setupEventListeners() {
         dom.searchButton.addEventListener('animationend', () => {
             dom.searchButton.classList.remove('animate-flash');
         }, { once: true });
-        
+
         handleSearch();
     });
 
@@ -664,16 +664,16 @@ function setupEventListeners() {
 
     dom.toggleSearchBtn.addEventListener('click', () => {
         const wasSearchCardVisible = !dom.searchCard.classList.contains('hidden');
-        hideAllContentSections(); 
+        hideAllContentSections();
 
         if (wasSearchCardVisible) {
             if (currentPlayer) {
-                showPage('playerInfoSection'); 
+                showPage('playerInfoSection');
             }
         } else {
-            dom.searchCard.classList.remove('hidden'); 
-            window.scrollTo({ top: 0, behavior: 'smooth' }); 
-            dom.usernameInput.focus(); 
+            dom.searchCard.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            dom.usernameInput.focus();
             dom.toggleSearchBtn.classList.add('active');
         }
     });
@@ -711,16 +711,16 @@ function setupEventListeners() {
             const song_title = useUnicode && beatmapsetData.title_unicode ? beatmapsetData.title_unicode : beatmapsetData.title;
 
             title.textContent = `${artist} - ${song_title} [${beatmapData.version}]`;
-        } 
+        }
         if (appState.currentlyPlaying && !dom.player.container.classList.contains('hidden')) {
             const beatmapset = appState.currentlyPlaying;
             const useUnicode = appState.displayUnicode;
             const artist = useUnicode && beatmapset.artist_unicode ? beatmapset.artist_unicode : beatmapset.artist;
             const title = useUnicode && beatmapset.title_unicode ? beatmapset.title_unicode : beatmapset.title;
-            
+
             dom.player.infoText.innerHTML = `<strong>${artist}</strong> - ${title}`;
             dom.player.info.title = `${artist} - ${title}`;
-        }   
+        }
     });
 
     dom.changeKeyBtn.addEventListener('click', () => {
@@ -731,7 +731,7 @@ function setupEventListeners() {
         dom.clientSecretInput.value = '';
         showKeySetupUI(true);
     });
-    
+
     dom.saveKeysBtn.addEventListener('click', async () => {
         dom.errorMessageDiv.classList.add('hidden');
         const id = dom.clientIdInput.value.trim();
@@ -747,12 +747,12 @@ function setupEventListeners() {
                 localStorage.setItem('osuClientId', id);
                 localStorage.setItem('osuClientSecret', secret);
                 showToast("密钥验证成功并已保存！");
-                showKeyManagementUI(); 
+                showKeyManagementUI();
             } else {
                 displayError("密钥验证失败。请检查您的客户端ID和密钥是否正确。");
             }
         } catch (error) {
-             displayError(error.message || "发生未知错误。");
+            displayError(error.message || "发生未知错误。");
         } finally {
             setLoading(false);
         }
@@ -775,7 +775,7 @@ function setupEventListeners() {
             if (pageId === 'beatmapSearchPage') {
                 showPage(pageId);
                 // 如果结果容器为空或没有搜索游标，且是搜索模式，则执行搜索
-                if ((dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) && 
+                if ((dom.beatmapSearchPage.resultsContainer.innerHTML === '' || appState.beatmapSearchCursor === null) &&
                     appState.beatmapSearchMode === 'search') {
                     handleBeatmapSearch();
                 }
@@ -812,7 +812,7 @@ function setupEventListeners() {
         if (e.target && e.target.id === 'loadMoreBtn') {
             loadMoreRecentPlays();
         }
-    });    
+    });
 
     document.querySelectorAll('.sort-header[data-sort]').forEach(header => {
         header.addEventListener('click', () => {
@@ -858,11 +858,11 @@ function setupEventListeners() {
         appState.fcFilterStatus = e.target.value;
         renderFilteredAndSortedTopPlays();
     });
-    
+
     dom.selectAllCheckbox.addEventListener('change', (e) => {
         dom.topPlaysDiv.querySelectorAll('.glass-card').forEach(card => card.classList.toggle('selected', e.target.checked));
     });
-    
+
     dom.downloadSelectedBtn.addEventListener('click', () => {
         // 添加动画类
         dom.downloadSelectedBtn.classList.add('animate-flash');
@@ -886,12 +886,12 @@ function setupEventListeners() {
         appState.recentPassOnly = e.target.checked;
         renderFilteredRecentPlays();
     });
-    
+
     dom.recentBpOnlyCheckbox.addEventListener('change', (e) => {
         appState.recentBpOnly = e.target.checked;
         renderFilteredRecentPlays();
     });
-    
+
     dom.recentSelectAllCheckbox.addEventListener('change', (e) => {
         dom.recentPlaysDiv.querySelectorAll('.glass-card').forEach(card => card.classList.toggle('selected', e.target.checked));
     });
@@ -939,7 +939,7 @@ function setupEventListeners() {
 
         handleBeatmapSearch();
     });
-    
+
     dom.beatmapSearchPage.identifyBtn.addEventListener('click', () => {
         // 添加动画类
         dom.beatmapSearchPage.identifyBtn.classList.add('animate-flash');
@@ -950,20 +950,20 @@ function setupEventListeners() {
 
         handleBeatmapIdentify();
     });
-    
+
     dom.beatmapSearchPage.modeToggleBtn.addEventListener('click', toggleBeatmapSearchMode);
-    
+
     dom.beatmapSearchPage.queryInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             // --- 新增代码：触发"搜索"按钮的动画 ---
-            const button = appState.beatmapSearchMode === 'search' ? 
+            const button = appState.beatmapSearchMode === 'search' ?
                 dom.beatmapSearchPage.searchBtn : dom.beatmapSearchPage.identifyBtn;
             button.classList.add('animate-flash');
             button.addEventListener('animationend', () => {
                 button.classList.remove('animate-flash');
             }, { once: true });
             // --- 新增代码结束 ---
-            
+
             if (appState.beatmapSearchMode === 'search') {
                 handleBeatmapSearch();
             } else {
@@ -973,14 +973,14 @@ function setupEventListeners() {
     });
 
     window.addEventListener('scroll', () => {
-        if (appState.activePage !== 'beatmapSearchPage' || 
-            appState.isFetchingBeatmaps || 
+        if (appState.activePage !== 'beatmapSearchPage' ||
+            appState.isFetchingBeatmaps ||
             appState.beatmapSearchMode === 'identify') {
             return;
         }
 
         const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-        
+
         if (scrollTop + clientHeight >= scrollHeight - 300) {
             handleBeatmapSearch(true);
         }
@@ -1035,7 +1035,7 @@ function setupEventListeners() {
             try {
                 const beatmapsetData = JSON.parse(actionsContainer.dataset.beatmapset);
                 const beatmapData = JSON.parse(selectedIndicator.dataset.beatmap);
-                
+
                 openPpCalculatorForBeatmap(beatmapData, beatmapsetData);
 
             } catch (error) {
@@ -1044,7 +1044,7 @@ function setupEventListeners() {
         }
     });
 
-        const statusFiltersContainer = document.getElementById('beatmapStatusFilters');
+    const statusFiltersContainer = document.getElementById('beatmapStatusFilters');
 
     // 辅助函数：更新筛选按钮的激活状态
     const updateStatusFiltersUI = () => {
@@ -1060,7 +1060,7 @@ function setupEventListeners() {
             const oldStatus = appState.beatmapStatusFilter;
             appState.beatmapStatusFilter = targetHeader.dataset.status;
             updateStatusFiltersUI();
-            
+
             // 根据当前模式执行不同的操作
             if (appState.beatmapSearchMode === 'search') {
                 handleBeatmapSearch(); // 搜索模式下执行搜索
@@ -1068,26 +1068,26 @@ function setupEventListeners() {
                 // 识别模式下，如果已经有识别结果，则重新筛选
                 const resultsContainer = dom.beatmapSearchPage.resultsContainer;
                 const beatmapCards = resultsContainer.querySelectorAll('.beatmap-card');
-                
+
                 if (beatmapCards.length > 0) {
                     // 已经有识别结果，只需要筛选
                     let displayedCount = 0;
                     let totalCount = 0;
-                    
+
                     // 隐藏所有卡片
                     beatmapCards.forEach(card => {
                         const actionsContainer = card.querySelector('.beatmap-card__actions');
                         if (!actionsContainer || !actionsContainer.dataset.beatmapset) return;
-                        
+
                         try {
                             totalCount++;
                             const beatmapset = JSON.parse(actionsContainer.dataset.beatmapset);
                             const status = (beatmapset.status || '').toLowerCase(); // 将API状态转为小写
-                            
+
                             // 根据筛选条件决定是否显示
                             let shouldDisplay = true;
                             const statusFilter = appState.beatmapStatusFilter;
-                            
+
                             if (statusFilter !== 'any') {
                                 if (statusFilter === '') {
                                     // "拥有排行榜"状态下只显示上架、社区喜爱、过审和已批准的谱面
@@ -1097,28 +1097,28 @@ function setupEventListeners() {
                                     shouldDisplay = status === statusFilter;
                                 }
                             }
-                            
+
                             card.style.display = shouldDisplay ? '' : 'none';
                             if (shouldDisplay) displayedCount++;
                         } catch (error) {
                             console.error('筛选谱面时出错:', error);
                         }
                     });
-                    
+
                     // 更新摘要信息
                     const existingSummary = resultsContainer.querySelector('p.opacity-70.text-center.p-4');
                     if (existingSummary) resultsContainer.removeChild(existingSummary);
-                    
+
                     const summaryElem = document.createElement('p');
                     summaryElem.className = 'opacity-70 text-center p-4';
                     summaryElem.style.gridColumn = '1 / -1';
-                    
+
                     if (displayedCount === 0) {
                         summaryElem.textContent = '未找到符合当前筛选条件的谱面。';
                     } else {
                         summaryElem.textContent = `共找到 ${displayedCount} 个谱面`;
                     }
-                    
+
                     resultsContainer.appendChild(summaryElem);
                     showToast(`已筛选谱面，显示 ${displayedCount}/${totalCount} 个谱面`);
                 } else if (dom.beatmapSearchPage.queryInput.value.trim()) {
@@ -1146,20 +1146,20 @@ function setupEventListeners() {
         }, { once: true });
 
         const baseUrl = DOWNLOAD_SOURCE_INFO[appState.downloadSource].url;
-        
+
         // 从选中的卡片中提取 beatmapset ID
         const ids = [...new Set(
             Array.from(dom.beatmapSearchPage.resultsContainer.querySelectorAll('.beatmap-card.selected'))
-                 .map(card => card.querySelector('.beatmap-card__actions')?.dataset.beatmapset)
-                 .filter(Boolean) // 过滤掉无效数据
-                 .map(json => JSON.parse(json).id)
+                .map(card => card.querySelector('.beatmap-card__actions')?.dataset.beatmapset)
+                .filter(Boolean) // 过滤掉无效数据
+                .map(json => JSON.parse(json).id)
         )];
 
         if (ids.length === 0) {
             showToast('请先选择要下载的谱面');
             return;
         }
-        
+
         // 使用openDownloadLink函数代替window.open
         ids.forEach(id => openDownloadLink(`${baseUrl}${id}`));
         showToast(`正在下载${ids.length}个谱面...`);
@@ -1168,7 +1168,7 @@ function setupEventListeners() {
     // --- 新增代码：当用户在玩家输入框中输入时，移除错误状态 ---
     dom.usernameInput.addEventListener('input', () => {
         dom.usernameInput.classList.remove('input-error');
-    });    
+    });
 
     // 为📎图标添加点击事件监听器，显示toast提示
     document.querySelectorAll('.custom-tooltip-container .cursor-pointer').forEach(icon => {
@@ -1203,7 +1203,7 @@ function rerenderBeatmapCardsWithNewLanguage() {
 
             // ★ 核心修复 ★
             // 1. 只更新 <a> 标签内部的文字，而不是整个父元素
-            titleLink.textContent = title; 
+            titleLink.textContent = title;
 
             // 2. 只更新艺术家元素的文字
             artistEl.textContent = artist;
@@ -1222,14 +1222,14 @@ function rerenderBeatmapCardsWithNewLanguage() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await init('./rosu_pp_js/rosu_pp_js_bg.wasm');
+        await init();
         console.log("rosu-pp-js Wasm 模块已加载");
     } catch (error) {
         console.error("加载 rosu-pp-js Wasm 模块失败:", error);
         displayError("错误: 无法加载 PP 计算模块。请刷新页面重试。");
         return;
     }
-    
+
     appState.themes = [
         { name: '粉饼', path: '0_osu' },
         { name: '典雅', path: '1_book' },
@@ -1242,10 +1242,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setupBackgroundAnimation();
 
-    await loadTheme(0); 
+    await loadTheme(0);
 
     loadSearchHistory();
-    
+
     setupDragToSelect({ container: dom.topPlaysDiv, selectAllCheckbox: dom.selectAllCheckbox });
     setupDragToSelect({ container: dom.recentPlaysDiv, selectAllCheckbox: dom.recentSelectAllCheckbox });
     setupDragToSelect({
@@ -1268,7 +1268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     backToTopBtn.addEventListener('click', () => {
         window.scrollTo({
             top: 0,
-            behavior: 'smooth' 
+            behavior: 'smooth'
         });
     });
 });
