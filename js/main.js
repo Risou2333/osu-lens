@@ -1234,6 +1234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { name: '粉饼', path: '0_osu' },
         { name: '典雅', path: '1_book' },
         { name: '像素', path: '2_pixel' },
+        { name: '漫画', path: '3_manga' },
     ];
 
     setupCredentials();
