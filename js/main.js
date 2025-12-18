@@ -32,7 +32,7 @@ async function loadTheme(themeIndex) {
     dom.themeStylesheet.href = `theme/${theme.path}/style.css`;
 
     try {
-        const animationModule = await import(`../../theme/${theme.path}/animation.js`);
+        const animationModule = await import(`../theme/${theme.path}/animation.js`);
         if (animationModule && typeof animationModule.setupBackgroundAnimation === 'function') {
             animationModule.setupBackgroundAnimation();
         }
@@ -1273,4 +1273,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 });
+
 
