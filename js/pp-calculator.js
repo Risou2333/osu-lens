@@ -1,7 +1,7 @@
 // js/pp-calculator.js
 
 // PP 计算器核心逻辑
-import init, * as rosu from '../../rosu_pp_js/rosu_pp_js.js';
+import init, * as rosu from './rosu_pp_js/rosu_pp_js.js';
 import { dom } from './dom.js';
 import { appState, calculatorState } from './state.js';
 import { MODS_ENUM, CORS_PROXY_URL } from './config.js';
@@ -147,8 +147,8 @@ function handlePpCalcScoreChange(sourceId) {
         if (sourceId === 'acc') {
             const acc = parseFloat(document.getElementById('pp-calc-acc-input').value);
             if (acc === 100) {
-                 updatePpCalcSlider('combo', calculatorState.currentDiffAttrs.maxCombo);
-                 updatePpCalcSlider('miss', 0);
+                updatePpCalcSlider('combo', calculatorState.currentDiffAttrs.maxCombo);
+                updatePpCalcSlider('miss', 0);
             }
         }
     }
@@ -291,7 +291,7 @@ async function updatePpPerformance() {
             perfConfig.accuracy = parseFloat(document.getElementById('pp-calc-acc-input').value);
             perfConfig.hitresultPriority = rosu.HitResultPriority.Fastest;
         }
-        if(lazer) {
+        if (lazer) {
             perfConfig.largeTickHits = parseInt(document.getElementById('pp-calc-sliderTicks-input').value);
             perfConfig.sliderEndHits = parseInt(document.getElementById('pp-calc-sliderEnds-input').value);
         }
