@@ -27,8 +27,11 @@ export async function getAccessToken(id, secret, isSilent = false) {
         body.append('client_id', id);
         body.append('client_secret', secret);
         body.append('scope', 'public');
-        
-        const response = await fetch(CORS_PROXY_URL + encodeURIComponent(OSU_TOKEN_URL), {
+
+        const targetUrl = OSU_TOKEN_URL;
+        const fetchUrl = CORS_PROXY_URL ? CORS_PROXY_URL + encodeURIComponent(targetUrl) : targetUrl;
+
+        const response = await fetch(fetchUrl, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body,
@@ -51,12 +54,12 @@ export async function getAccessToken(id, secret, isSilent = false) {
 
         const data = await response.json();
         setAccessToken(data.access_token, Date.now() + (data.expires_in - 60) * 1000);
-        
+
         return accessToken;
     } catch (error) {
         if (!isSilent) {
-           console.error('获取 Access Token 时出错:', error);
-           displayError(error.message);
+            console.error('获取 Access Token 时出错:', error);
+            displayError(error.message);
         }
         return null;
     }
@@ -66,7 +69,10 @@ export async function fetchV2Api(endpoint) {
     const token = await getAccessToken(dom.clientIdInput.value, dom.clientSecretInput.value);
     if (!token) return null;
 
-    const response = await fetch(CORS_PROXY_URL + encodeURIComponent(`${OSU_API_BASE_URL}/${endpoint}`), {
+    const targetUrl = `${OSU_API_BASE_URL}/${endpoint}`;
+    const fetchUrl = CORS_PROXY_URL ? CORS_PROXY_URL + encodeURIComponent(targetUrl) : targetUrl;
+
+    const response = await fetch(fetchUrl, {
         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
     });
 
@@ -110,7 +116,7 @@ export async function searchBeatmapsets(searchQuery) {
 
     // 构建最终的API端点
     const endpoint = `beatmapsets/search?${params.toString()}`;
-    
+
     // 发送API请求
     return await fetchV2Api(endpoint);
 }
