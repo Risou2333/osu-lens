@@ -5,3 +5,15 @@
   for = "/*.wasm"
   [headers.values]
     Content-Type = "application/wasm"
+
+[[redirects]]
+  from = "/osu-api/*"
+  to = "https://osu.ppy.sh/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/osu-token"
+  to = "https://osu.ppy.sh/oauth/token"
+  status = 200
+  force = true
