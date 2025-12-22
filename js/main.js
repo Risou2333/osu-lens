@@ -29,6 +29,9 @@ async function loadTheme(themeIndex) {
 
     appState.currentThemeIndex = themeIndex % appState.themes.length;
 
+    // 保存主题选择到localStorage
+    localStorage.setItem('osuLensTheme', appState.currentThemeIndex.toString());
+
     dom.themeStylesheet.href = `theme/${theme.path}/style.css`;
 
     try {
@@ -1243,7 +1246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setupBackgroundAnimation();
 
-    await loadTheme(0);
+    const savedTheme = localStorage.getItem('osuLensTheme');
+    const themeIndex = savedTheme ? parseInt(savedTheme) : 0;
+    await loadTheme(themeIndex);
 
     loadSearchHistory();
 
@@ -1273,5 +1278,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 });
-
 
