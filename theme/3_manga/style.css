@@ -411,11 +411,6 @@ body {
     background-color: var(--highlight-bg-color);
 }
 
-.glass-card.selected::before {
-    filter: grayscale(0%) contrast(1.1);
-    opacity: 1;
-}
-
 .bp-highlight.selected {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
@@ -444,11 +439,6 @@ body {
 .beatmap-card.selected {
     border: 2px solid var(--primary-color);
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15), 3px 3px 0px #c0c0c0;
-}
-
-.beatmap-card.selected .beatmap-card__header,
-.beatmap-card.selected .beatmap-cover {
-    filter: grayscale(0%) contrast(1.1);
 }
 
 .btn-primary {
