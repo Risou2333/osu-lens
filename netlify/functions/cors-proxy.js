@@ -1,61 +1,115 @@
 // netlify/functions/cors-proxy.js
-
-// 使用 require 引入 node-fetch 库
+// 仅代理 osu! 官方域名中 osu!lens 实际需要的路径，避免成为任意 URL 开放代理。
 const fetch = require('node-fetch');
 
-exports.handler = async (event) => {
-  const targetUrl = event.queryStringParameters.url;
+const ALLOWED_METHODS = new Set(['GET', 'POST', 'OPTIONS']);
 
-  if (!targetUrl) {
+function corsHeaders(contentType = 'text/plain; charset=utf-8') {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Accept',
+    'Content-Type': contentType,
+    'Vary': 'Origin',
+  };
+}
+
+function isAllowedTarget(url) {
+  if (url.protocol !== 'https:' || url.hostname !== 'osu.ppy.sh') return false;
+
+  return (
+    url.pathname === '/oauth/token' ||
+    url.pathname.startsWith('/api/v2/') ||
+    /^\/osu\/\d+$/.test(url.pathname)
+  );
+}
+
+exports.handler = async (event) => {
+  const method = String(event.httpMethod || 'GET').toUpperCase();
+
+  if (!ALLOWED_METHODS.has(method)) {
     return {
-      statusCode: 400,
-      body: '错误：缺少目标 URL 参数。',
+      statusCode: 405,
+      headers: corsHeaders(),
+      body: 'Method Not Allowed',
     };
   }
 
-  // 创建一个新的 headers 对象，只转发必要的头信息
-  // 浏览器发送的 Authorization 头会包含在 event.headers 中
-  const forwardedHeaders = {
-    'Accept': 'application/json',
-    'Content-Type': event.headers['content-type'] || 'application/json',
-  };
-
-  // 如果存在 Authorization 头，则转发它
-  if (event.headers.authorization) {
-    forwardedHeaders['Authorization'] = event.headers.authorization;
+  if (method === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: corsHeaders(),
+      body: '',
+    };
   }
 
+  const rawTarget = event.queryStringParameters && event.queryStringParameters.url;
+  if (!rawTarget) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders(),
+      body: '缺少目标 URL 参数。',
+    };
+  }
+
+  let target;
   try {
-    const response = await fetch(targetUrl, {
-      method: event.httpMethod,
+    target = new URL(rawTarget);
+  } catch (_) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders(),
+      body: '目标 URL 无效。',
+    };
+  }
+
+  if (!isAllowedTarget(target)) {
+    return {
+      statusCode: 403,
+      headers: corsHeaders(),
+      body: '不允许代理该目标。',
+    };
+  }
+
+  const isRawBeatmap = /^\/osu\/\d+$/.test(target.pathname);
+  const forwardedHeaders = {
+    'Accept': isRawBeatmap ? 'text/plain,*/*;q=0.8' : 'application/json',
+  };
+
+  const contentType = event.headers && (event.headers['content-type'] || event.headers['Content-Type']);
+  if (contentType) forwardedHeaders['Content-Type'] = contentType;
+
+  const authorization = event.headers && (event.headers.authorization || event.headers.Authorization);
+  if (authorization) forwardedHeaders.Authorization = authorization;
+
+  try {
+    const response = await fetch(target.toString(), {
+      method,
       headers: forwardedHeaders,
-      // 仅在非 GET/HEAD 请求中传递 body
-      body: event.httpMethod !== 'GET' && event.httpMethod !== 'HEAD' ? event.body : undefined,
+      body: method === 'POST' ? event.body : undefined,
       redirect: 'follow',
     });
 
-    const data = await response.text();
+    const body = await response.text();
+    const upstreamType = response.headers.get('content-type') ||
+      (isRawBeatmap ? 'text/plain; charset=utf-8' : 'application/json; charset=utf-8');
 
-    // 从目标响应复制相关的头信息到客户端响应
-    const responseHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Content-Type': response.headers.get('Content-Type') || 'application/json',
-    };
+    const headers = corsHeaders(upstreamType);
+    headers['Cache-Control'] = isRawBeatmap
+      ? 'public, max-age=86400, s-maxage=86400'
+      : 'no-store';
 
     return {
       statusCode: response.status,
-      body: data,
-      headers: responseHeaders,
+      headers,
+      body,
     };
   } catch (error) {
+    console.error('osu! proxy failed:', error);
     return {
-      statusCode: 500,
+      statusCode: 502,
+      headers: corsHeaders(),
       body: `代理请求失败: ${error.message}`,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
     };
   }
 };
