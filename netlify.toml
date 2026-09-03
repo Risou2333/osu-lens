@@ -1,3 +1,7 @@
+[build]
+  command = "sh scripts/update-rosu.sh && python3 scripts/patch-pp-v4.py"
+  publish = "."
+
 [functions]
   directory = "netlify/functions"
 
@@ -5,15 +9,9 @@
   for = "/*.wasm"
   [headers.values]
     Content-Type = "application/wasm"
+    Cache-Control = "public, max-age=31536000, immutable"
 
-[[redirects]]
-  from = "/osu-api/*"
-  to = "https://osu.ppy.sh/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/osu-token"
-  to = "https://osu.ppy.sh/oauth/token"
-  status = 200
-  force = true
+[[headers]]
+  for = "/js/rosu_pp_js/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
